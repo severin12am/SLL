@@ -247,6 +247,82 @@
                 content: '🔊';
                 font-size: 16px;
             }
+
+            /* Mobile Controls */
+            #mobile-controls {
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                display: none;
+                touch-action: none;
+                z-index: 1000;
+            }
+
+            .d-pad {
+                width: 150px;
+                height: 150px;
+                position: relative;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                backdrop-filter: blur(5px);
+            }
+
+            .d-pad-button {
+                position: absolute;
+                width: 50px;
+                height: 50px;
+                background: rgba(255, 255, 255, 0.8);
+                border: 2px solid rgba(0, 0, 0, 0.2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                cursor: pointer;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+
+            .d-pad-button:active {
+                background: rgba(200, 200, 200, 0.8);
+            }
+
+            #up-btn {
+                top: 0;
+                left: 50px;
+                border-radius: 10px 10px 0 0;
+            }
+
+            #down-btn {
+                bottom: 0;
+                left: 50px;
+                border-radius: 0 0 10px 10px;
+            }
+
+            #left-btn {
+                left: 0;
+                top: 50px;
+                border-radius: 10px 0 0 10px;
+            }
+
+            #right-btn {
+                right: 0;
+                top: 50px;
+                border-radius: 0 10px 10px 0;
+            }
+
+            /* Show mobile controls on touch devices and small screens */
+            @media (max-width: 1024px), (hover: none) {
+                #mobile-controls {
+                    display: block !important;
+                }
+            }
+
+            /* Hide mobile controls on desktop */
+            @media (min-width: 1025px) and (hover: hover) {
+                #mobile-controls {
+                    display: none !important;
+                }
+            }
         </style>
         <!-- Relaxed CSP to allow inline scripts, eval, workers, and external connections -->
         <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://esm.sh data: blob: chrome-extension:; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.supabase.co https://esm.sh chrome-extension:; connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co https://esm.sh chrome-extension:; worker-src 'self' blob:; img-src 'self' data: blob: chrome-extension:; media-src 'self' data: blob: chrome-extension:">
@@ -288,6 +364,16 @@
                 </select>
             </div>
             <button id="start-game" class="start-button">Start</button>
+        </div>
+
+        <!-- Mobile Controls -->
+        <div id="mobile-controls">
+            <div class="d-pad">
+                <div id="up-btn" class="d-pad-button">⬆️</div>
+                <div id="down-btn" class="d-pad-button">⬇️</div>
+                <div id="left-btn" class="d-pad-button">⬅️</div>
+                <div id="right-btn" class="d-pad-button">➡️</div>
+            </div>
         </div>
 
         <!-- Move script tags outside of body to avoid CSP inline script issues -->
@@ -629,6 +715,110 @@
                     case 'ArrowRight':
                         keys.right = false;
                         break;
+                }
+            });
+
+            // Mobile Controls Setup
+            const mobileControls = document.getElementById('mobile-controls');
+            const upBtn = document.getElementById('up-btn');
+            const downBtn = document.getElementById('down-btn');
+            const leftBtn = document.getElementById('left-btn');
+            const rightBtn = document.getElementById('right-btn');
+
+            // Function to check if device is mobile/touch-enabled
+            function isMobileDevice() {
+                return (
+                    'ontouchstart' in window ||
+                    navigator.maxTouchPoints > 0 ||
+                    navigator.msMaxTouchPoints > 0 ||
+                    window.innerWidth <= 1024
+                );
+            }
+
+            // Initialize mobile controls
+            function initMobileControls() {
+                if (isMobileDevice()) {
+                    mobileControls.style.display = 'block';
+                    
+                    // Prevent default touch behaviors
+                    document.addEventListener('touchmove', function(e) {
+                        if (e.target.closest('#mobile-controls')) {
+                            e.preventDefault();
+                        }
+                    }, { passive: false });
+
+                    // Handle touch events for d-pad buttons
+                    const buttons = {
+                        'up-btn': 'forward',
+                        'down-btn': 'backward',
+                        'left-btn': 'left',
+                        'right-btn': 'right'
+                    };
+
+                    Object.entries(buttons).forEach(([btnId, direction]) => {
+                        const btn = document.getElementById(btnId);
+                        if (btn) {
+                            // Touch events
+                            btn.addEventListener('touchstart', (e) => {
+                                e.preventDefault();
+                                keys[direction] = true;
+                            }, { passive: false });
+
+                            btn.addEventListener('touchend', (e) => {
+                                e.preventDefault();
+                                keys[direction] = false;
+                            }, { passive: false });
+
+                            // Mouse events (for testing on desktop)
+                            btn.addEventListener('mousedown', () => {
+                                keys[direction] = true;
+                            });
+
+                            btn.addEventListener('mouseup', () => {
+                                keys[direction] = false;
+                            });
+
+                            btn.addEventListener('mouseleave', () => {
+                                keys[direction] = false;
+                            });
+                        }
+                    });
+                }
+            }
+
+            // Call initMobileControls after window loads
+            window.addEventListener('load', initMobileControls);
+
+            // Reinitialize on orientation change
+            window.addEventListener('orientationchange', initMobileControls);
+
+            // Handle touch move for camera rotation
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1 && !e.target.closest('#mobile-controls')) {
+                    const touch = e.touches[0];
+                    touchStartX = touch.clientX;
+                    touchStartY = touch.clientY;
+                }
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && !e.target.closest('#mobile-controls')) {
+                    const touch = e.touches[0];
+                    const movementX = touch.clientX - touchStartX;
+                    const movementY = touch.clientY - touchStartY;
+                    
+                    const sensitivity = 0.002;
+                    yaw -= movementX * sensitivity;
+                    pitch -= movementY * sensitivity;
+                    pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+                    
+                    touchStartX = touch.clientX;
+                    touchStartY = touch.clientY;
+                    
+                    updateCamera();
                 }
             });
 
@@ -1149,133 +1339,14 @@
             let startTime = 0;
 
             if (!SpeechRecognition) {
-                createDialogueBox("Speech recognition is not supported in this browser.");
+                console.error("Speech recognition is not supported in this browser.");
+                createDialogueBox("Speech recognition is not supported in this browser. Please try using Chrome, Edge, or Safari.");
             } else {
-                recognition = new SpeechRecognition();
-                recognition.interimResults = false;
-                recognition.maxAlternatives = 1;
-                recognition.continuous = false;
-
-                recognition.onstart = () => {
-                    console.log("Speech recognition started");
-                    isRecognizing = true;
-                };
-
-                recognition.onspeechstart = () => {
-                    console.log("Speech detected");
-                };
-
-                recognition.onerror = (event) => {
-                    console.error("Speech recognition error:", event.error);
-                    isRecognizing = false;
-                    if (event.error === 'not-allowed') {
-                        createDialogueBox("Error: Microphone access not granted. Please allow microphone access and reload the page.");
-                    }
-                    setTimeout(() => {
-                        startRecognition();
-                    }, 1000);
-                };
-
-                recognition.onend = () => {
-                    console.log("Speech recognition ended");
-                    isRecognizing = false;
-                    if (hasStartedDialogue && !speechSynthesis.speaking) {
-                        setTimeout(() => {
-                            startRecognition();
-                        }, 100);
-                    }
-                };
-
-                recognition.onresult = (event) => {
-                    try {
-                        if (!event.results || event.results.length === 0) {
-                            console.error('No results in recognition event');
-                            return;
-                        }
-
-                        const currentTime = Date.now();
-                        if (currentTime - lastRecognitionTime < 500) {
-                            console.log('Skipping recognition - too soon after last recognition');
-                            return;
-                        }
-                        lastRecognitionTime = currentTime;
-
-                        const result = event.results[event.results.length - 1];
-                        if (!result || !result[0]) {
-                            console.error('Invalid recognition result structure');
-                            return;
-                        }
-
-                        const spokenText = result[0].transcript.trim();
-                        console.log("Spoken text recognized:", spokenText);
-                        
-                        if (currentStep >= dialogueSteps[languageConfig.newLanguage].length) {
-                            console.error('Current step is out of bounds:', currentStep);
-                            return;
-                        }
-
-                        if (highlightWords(spokenText)) {
-                            if (recognition && isRecognizing) {
-                                recognition.stop();
-                                isRecognizing = false;
-                            }
-
-                            setTimeout(() => {
-                                updateDialogue(currentStep, false);
-                                const vendorResponse = vendorResponses[languageConfig.newLanguage][currentStep];
-                                if (vendorResponse) {
-                                    speakVendorResponse(vendorResponse.text);
-                                    const vendorDelay = calculateVendorDelay(vendorResponse.text);
-                                    
-                                    setTimeout(() => {
-                                        currentStep++;
-                                        if (currentStep < dialogueSteps[languageConfig.newLanguage].length) {
-                                            updateDialogue(currentStep, true);
-                                            setTimeout(() => {
-                                                startRecognition();
-                                            }, 500);
-                                        }
-                                    }, vendorDelay);
-                                }
-                            }, 500);
-                        } else {
-                            console.log("Recognition did not meet threshold - continue listening");
-                        }
-                    } catch (error) {
-                        console.error('Error in recognition result handler:', error);
-                        if (recognition && !isRecognizing) {
-                            setTimeout(() => {
-                                try {
-                                    recognition.start();
-                                    isRecognizing = true;
-                                } catch (e) {
-                                    console.error('Failed to recover recognition:', e);
-                                }
-                            }, 1000);
-                        }
-                    }
-                };
-            }
-
-            // Add this function after the recognition setup code
-            function initializeRecognition() {
                 try {
-                    if (recognition) {
-                        recognition.abort();
-                        recognition.stop();
-                        isRecognizing = false;
-                    }
-
                     recognition = new SpeechRecognition();
                     recognition.interimResults = false;
                     recognition.maxAlternatives = 1;
                     recognition.continuous = false;
-
-                    // Set language based on what the user is learning
-                    recognition.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
-                                     languageConfig.newLanguage === 'es' ? 'es-ES' : 
-                                     languageConfig.newLanguage === 'ru' ? 'ru-RU' :
-                                     languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
 
                     recognition.onstart = () => {
                         console.log("Speech recognition started");
@@ -1291,6 +1362,12 @@
                         isRecognizing = false;
                         if (event.error === 'not-allowed') {
                             createDialogueBox("Error: Microphone access not granted. Please allow microphone access and reload the page.");
+                        } else if (event.error === 'no-speech') {
+                            console.log("No speech detected");
+                        } else if (event.error === 'network') {
+                            createDialogueBox("Network error occurred. Please check your internet connection.");
+                        } else {
+                            createDialogueBox(`Speech recognition error: ${event.error}`);
                         }
                         setTimeout(() => {
                             startRecognition();
@@ -1304,22 +1381,22 @@
                             setTimeout(() => {
                                 startRecognition();
                             }, 100);
-                    }
-                };
+                        }
+                    };
 
-                recognition.onresult = (event) => {
+                    recognition.onresult = (event) => {
                         try {
                             if (!event.results || event.results.length === 0) {
                                 console.error('No results in recognition event');
                                 return;
                             }
 
-                        const currentTime = Date.now();
+                            const currentTime = Date.now();
                             if (currentTime - lastRecognitionTime < 500) {
                                 console.log('Skipping recognition - too soon after last recognition');
                                 return;
                             }
-                        lastRecognitionTime = currentTime;
+                            lastRecognitionTime = currentTime;
 
                             const result = event.results[event.results.length - 1];
                             if (!result || !result[0]) {
@@ -1345,12 +1422,12 @@
                                     updateDialogue(currentStep, false);
                                     const vendorResponse = vendorResponses[languageConfig.newLanguage][currentStep];
                                     if (vendorResponse) {
-                                    speakVendorResponse(vendorResponse.text);
+                                        speakVendorResponse(vendorResponse.text);
                                         const vendorDelay = calculateVendorDelay(vendorResponse.text);
-                                    
-                                    setTimeout(() => {
-                                        currentStep++;
-                                        if (currentStep < dialogueSteps[languageConfig.newLanguage].length) {
+                                        
+                                        setTimeout(() => {
+                                            currentStep++;
+                                            if (currentStep < dialogueSteps[languageConfig.newLanguage].length) {
                                                 updateDialogue(currentStep, true);
                                                 setTimeout(() => {
                                                     startRecognition();
@@ -1359,7 +1436,7 @@
                                         }, vendorDelay);
                                     }
                                 }, 500);
-                                        } else {
+                            } else {
                                 console.log("Recognition did not meet threshold - continue listening");
                             }
                         } catch (error) {
@@ -1376,8 +1453,6 @@
                             }
                         }
                     };
-
-                    console.log("Recognition initialized with language:", recognition.lang);
                 } catch (error) {
                     console.error("Error initializing recognition:", error);
                 }
@@ -1416,16 +1491,24 @@
             async function initGame() {
                 if (!recognition) {
                     console.error("Speech recognition not initialized");
+                    createDialogueBox("Speech recognition is not available. Please use a supported browser like Chrome, Edge, or Safari.");
+                    return;
+                }
+                
+                // Check for HTTPS
+                if (window.location.protocol !== 'https:') {
+                    console.error("Site must be served over HTTPS for speech recognition to work");
+                    createDialogueBox("This site requires HTTPS for speech recognition to work. Please use a secure connection.");
                     return;
                 }
                 
                 try {
-                // Reset state
-                currentStep = 0;
-                isRecognizing = false;
-                hasStartedDialogue = false;
-                dialogueBoxes.forEach(box => box.remove());
-                dialogueBoxes = [];
+                    // Reset state
+                    currentStep = 0;
+                    isRecognizing = false;
+                    hasStartedDialogue = false;
+                    dialogueBoxes.forEach(box => box.remove());
+                    dialogueBoxes = [];
 
                     // Fetch dialogue data for the current character (starting with Market Vendor, id: 1)
                     await fetchDialogueData(1, languageConfig.motherLanguage, languageConfig.newLanguage);
@@ -1436,17 +1519,29 @@
                         throw new Error("Failed to load dialogue data");
                     }
                 
-                // Set up speech recognition for the new language
-                recognition.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
-                                 languageConfig.newLanguage === 'es' ? 'es-ES' : 
-                                 languageConfig.newLanguage === 'ru' ? 'ru-RU' :
-                                 languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
+                    // Set up speech recognition for the new language
+                    recognition.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
+                                     languageConfig.newLanguage === 'es' ? 'es-ES' : 
+                                     languageConfig.newLanguage === 'ru' ? 'ru-RU' :
+                                     languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
                 
-                // Start recognition
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    try {
+                        // Request microphone permission
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         console.log("Microphone access granted, stream active:", stream.active);
-                        isRecognizing = true;
-                                recognition.start();
+                        
+                        // Start recognition only if we have microphone access
+                        if (stream.active) {
+                            isRecognizing = true;
+                            recognition.start();
+                        } else {
+                            throw new Error("Microphone stream is not active");
+                        }
+                    } catch (permissionError) {
+                        console.error("Microphone permission error:", permissionError);
+                        createDialogueBox("Please allow microphone access to use speech recognition. Click the microphone icon in your browser's address bar and reload the page.");
+                        return;
+                    }
                 } catch (err) {
                     console.error("Error initializing game:", err);
                     createDialogueBox(`Error: ${err.message}`);
