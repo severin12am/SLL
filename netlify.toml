@@ -1,4 +1,9 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Access-Control-Allow-Origin = "*" 
+    Access-Control-Allow-Origin = "*"
+
+[[redirects]]
+  from = "/*"
+  to = "/webgl_animation_keyframes.html"
+  status = 200
