@@ -660,6 +660,10 @@
             let dialogueStartCooldown = false;
             let lastCharacterId = null;
 
+            // Add these variables at the top with other initialization variables
+            let fence = null;
+            const COLLISION_DISTANCE = 1.0; // Distance to maintain from fence
+
             // Update the vendor loader to store in characters object
             const vendorLoader = new GLTFLoader();
             vendorLoader.load('models/vendor.glb', (gltf) => {
@@ -1130,7 +1134,7 @@
                 return matchCount / maxLength;
             }
 
-            // Update the updatePlayer function to handle different characters
+            // Update the updatePlayer function to include fence collision
             function updatePlayer(delta) {
                 if (!player) return;
                 if (isNaN(delta) || delta <= 0) return;
@@ -1140,12 +1144,26 @@
                 const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
                 const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
 
-                if (keys.forward) velocity.add(forward.multiplyScalar(speed * delta));
-                if (keys.backward) velocity.add(forward.multiplyScalar(-speed * delta));
-                if (keys.left) velocity.add(right.multiplyScalar(-speed * delta));
-                if (keys.right) velocity.add(right.multiplyScalar(speed * delta));
+                // Calculate new position
+                const newPosition = player.position.clone();
+                if (keys.forward) newPosition.add(forward.multiplyScalar(speed * delta));
+                if (keys.backward) newPosition.add(forward.multiplyScalar(-speed * delta));
+                if (keys.left) newPosition.add(right.multiplyScalar(-speed * delta));
+                if (keys.right) newPosition.add(right.multiplyScalar(speed * delta));
 
-                player.position.add(velocity);
+                // Check collision with fence
+                if (fence) {
+                    const fencePosition = fence.position;
+                    const distanceToFence = newPosition.distanceTo(fencePosition);
+                    
+                    if (distanceToFence < COLLISION_DISTANCE) {
+                        // If too close to fence, don't update position
+                        return;
+                    }
+                }
+
+                // If no collision, update position
+                player.position.copy(newPosition);
                 camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
 
                 // Check distances to all characters
@@ -1533,6 +1551,9 @@
                     dialogueBoxes.forEach(box => box.remove());
                     dialogueBoxes = [];
 
+                    // Load fence first
+                    await loadFence();
+
                     // Fetch dialogue data for the current character (starting with Market Vendor, id: 1)
                     await fetchDialogueData(1, languageConfig.motherLanguage, languageConfig.newLanguage);
 
@@ -1775,6 +1796,28 @@
                 const charDelay = text.length * 100;
                 // Cap maximum delay at 5000ms (5 seconds)
                 return Math.min(baseDelay + charDelay, 5000);
+            }
+
+            // Add this function after other model loading code
+            function loadFence() {
+                return new Promise((resolve, reject) => {
+                    const fenceLoader = new GLTFLoader();
+                    fenceLoader.load('models/fence.glb', 
+                        (gltf) => {
+                            fence = gltf.scene;
+                            fence.position.set(2.5, -1, -2); // Adjust position as needed
+                            fence.scale.set(1, 1, 1); // Adjust scale as needed
+                            scene.add(fence);
+                            console.log("Fence loaded:", fence);
+                            resolve(fence);
+                        },
+                        undefined,
+                        (error) => {
+                            console.error('Error loading fence model:', error);
+                            reject(error);
+                        }
+                    );
+                });
             }
         </script>
     </body>
