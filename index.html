@@ -1805,8 +1805,8 @@
                     fenceLoader.load('models/fence.glb', 
                         (gltf) => {
                             fence = gltf.scene;
-                            fence.position.set(10, -1, -2); // Adjust position as needed
-                            fence.scale.set(0.3, 0.3, 0.3); // Adjust scale as needed
+                            fence.position.set(-5, -5, -2); // Adjust position as needed
+                            fence.scale.set(0.4, 0.4, 0.4); // Adjust scale as needed
                             scene.add(fence);
                             console.log("Fence loaded:", fence);
                             resolve(fence);
