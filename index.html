@@ -1360,28 +1360,33 @@
                     recognition.onerror = (event) => {
                         console.error("Speech recognition error:", event.error);
                         isRecognizing = false;
+                        
                         if (event.error === 'not-allowed') {
                             createDialogueBox("Error: Microphone access not granted. Please allow microphone access and reload the page.");
                         } else if (event.error === 'no-speech') {
                             console.log("No speech detected");
+                            // Only restart if we're in an active dialogue
+                            if (hasStartedDialogue && !speechSynthesis.speaking) {
+                                setTimeout(startRecognition, 1000);
+                            }
                         } else if (event.error === 'network') {
                             createDialogueBox("Network error occurred. Please check your internet connection.");
+                        } else if (event.error === 'aborted') {
+                            console.log("Recognition aborted");
                         } else {
                             createDialogueBox(`Speech recognition error: ${event.error}`);
                         }
-                        setTimeout(() => {
-                            if (hasStartedDialogue && !speechSynthesis.speaking) {
-                                startRecognition();
-                            }
-                        }, 1000);
                     };
 
                     recognition.onend = () => {
                         console.log("Speech recognition ended");
                         isRecognizing = false;
+                        // Only restart if we're in an active dialogue and not speaking
                         if (hasStartedDialogue && !speechSynthesis.speaking) {
                             setTimeout(() => {
-                                startRecognition();
+                                if (!isRecognizing) {  // Double check it's still not recognizing
+                                    startRecognition();
+                                }
                             }, 100);
                         }
                     };
@@ -1647,12 +1652,16 @@
                     return;
                 }
                 
+                // If already recognizing, don't try to start again
+                if (isRecognizing) {
+                    console.log('Recognition already in progress');
+                    return;
+                }
+                
                 try {
-                    // Stop any ongoing recognition
-                    if (isRecognizing) {
-                        recognition.stop();
-                        isRecognizing = false;
-                    }
+                    // Stop any ongoing recognition first
+                    recognition.stop();
+                    isRecognizing = false;
                     
                     // Add a small delay before starting new recognition
                     setTimeout(() => {
@@ -1684,7 +1693,7 @@
                 console.log('Handling replay:', { boxIndex, isVendorBox });
                 
                 // Stop current recognition and speech
-                if (recognition) {
+                if (recognition && isRecognizing) {
                     recognition.abort();
                     isRecognizing = false;
                 }
@@ -1714,21 +1723,31 @@
                 if (isVendorBox) {
                     const vendorResponse = vendorResponses[languageConfig.newLanguage][stepNumber];
                     if (vendorResponse) {
-                    speakVendorResponse(vendorResponse.text);
-                    
+                        speakVendorResponse(vendorResponse.text);
+                        
                         const vendorDelay = calculateVendorDelay(vendorResponse.text);
                         
-                    setTimeout(() => {
+                        setTimeout(() => {
                             currentStep = stepNumber + 1;
-                        if (currentStep < dialogueSteps[languageConfig.newLanguage].length) {
+                            if (currentStep < dialogueSteps[languageConfig.newLanguage].length) {
                                 updateDialogue(currentStep, true);
-                                setTimeout(startRecognition, 500);
+                                // Add a delay before starting recognition
+                                setTimeout(() => {
+                                    if (!isRecognizing) {
+                                        startRecognition();
+                                    }
+                                }, 500);
                             }
                         }, vendorDelay);
                     }
                 } else {
                     currentStep = stepNumber;
-                    setTimeout(startRecognition, 500);
+                    // Add a delay before starting recognition
+                    setTimeout(() => {
+                        if (!isRecognizing) {
+                            startRecognition();
+                        }
+                    }, 500);
                 }
             }
 
