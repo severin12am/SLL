@@ -34,13 +34,14 @@
             }
 
             #dialogue-boxes {
-                font-size: 20px;
-                position: relative;
-                height: 700px;
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-end;
-                overflow: hidden;
+                position: fixed;
+                bottom: 140px; /* Move dialogue boxes higher up */
+                left: 50%;
+                transform: translateX(-50%);
+                width: 80%;
+                max-width: 600px;
+                z-index: 1000;
+                pointer-events: none;
             }
 
             .dialogue-container {
@@ -254,7 +255,7 @@
                 bottom: 20px;
                 left: 50%;
                 transform: translateX(-50%);
-                width: 150px;
+                width: 280px; /* Wider to accommodate the new layout */
                 height: 100px;
                 z-index: 1000;
                 display: none;
@@ -262,8 +263,6 @@
 
             .d-pad-button {
                 position: absolute;
-                width: 40px;
-                height: 40px;
                 background: rgba(255, 255, 255, 0.7);
                 border: 1px solid rgba(0, 0, 0, 0.2);
                 display: flex;
@@ -284,26 +283,32 @@
 
             #up-btn {
                 top: 0;
-                left: 55px;
+                left: 80px;
+                width: 120px; /* Wider forward button */
+                height: 45px;
                 border-radius: 8px 8px 0 0;
             }
 
             #down-btn {
                 bottom: 0;
-                left: 55px;
+                left: 80px;
+                width: 120px; /* Wider backward button */
+                height: 45px;
                 border-radius: 0 0 8px 8px;
             }
 
             #left-btn {
-                left: 15px;
-                top: 30px;
-                border-radius: 8px 0 0 8px;
+                left: 0;
+                height: 100px; /* Full height */
+                width: 60px;
+                border-radius: 8px;
             }
 
             #right-btn {
-                right: 15px;
-                top: 30px;
-                border-radius: 0 8px 8px 0;
+                right: 0;
+                height: 100px; /* Full height */
+                width: 60px;
+                border-radius: 8px;
             }
 
             /* Show mobile controls on touch devices and small screens */
@@ -313,7 +318,13 @@
                 }
                 
                 #dialogue-boxes {
-                    padding-bottom: 140px; /* Add padding to prevent controls from overlapping dialogue */
+                    bottom: 140px; /* Keep dialogue boxes above controls */
+                    max-height: calc(100vh - 180px); /* Limit height to prevent overflow */
+                    overflow-y: auto; /* Allow scrolling if needed */
+                }
+
+                .dialogue-container {
+                    margin-bottom: 10px;
                 }
             }
 
