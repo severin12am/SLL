@@ -673,14 +673,14 @@
                             // Create first fence (keep original position)
                             const fence1 = gltf.scene.clone();
                             fence1.position.set(-0.55, -1.3, -3);
-                            fence1.scale.set(0.4, 0.4, 0.4);
+                            fence1.scale.set(0.5, 0.5, 0.5);
                             scene.add(fence1);
                             fences.push(fence1);
 
                             // Create second fence (rotated 180 degrees)
                             const fence2 = gltf.scene.clone();
                             fence2.position.set(0, -1.3, 2.5); // Mirror position of first fence
-                            fence2.scale.set(0.4, 0.4, 0.4);
+                            fence2.scale.set(0.5 0.5, 0.5);
                             fence2.rotation.y = Math.PI; // Rotate 180 degrees around Y axis
                             scene.add(fence2);
                             fences.push(fence2);
