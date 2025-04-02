@@ -252,68 +252,68 @@
             #mobile-controls {
                 position: fixed;
                 bottom: 20px;
-                left: 20px;
-                display: none;
-                touch-action: none;
-                z-index: 1000;
-            }
-
-            .d-pad {
+                left: 50%;
+                transform: translateX(-50%);
                 width: 150px;
-                height: 150px;
-                position: relative;
-                background: rgba(255, 255, 255, 0.3);
-                border-radius: 50%;
-                backdrop-filter: blur(5px);
+                height: 100px;
+                z-index: 1000;
+                display: none;
             }
 
             .d-pad-button {
                 position: absolute;
-                width: 50px;
-                height: 50px;
-                background: rgba(255, 255, 255, 0.8);
-                border: 2px solid rgba(0, 0, 0, 0.2);
+                width: 40px;
+                height: 40px;
+                background: rgba(255, 255, 255, 0.7);
+                border: 1px solid rgba(0, 0, 0, 0.2);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 24px;
+                font-size: 20px;
                 cursor: pointer;
                 user-select: none;
                 -webkit-user-select: none;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             }
 
             .d-pad-button:active {
                 background: rgba(200, 200, 200, 0.8);
+                transform: translateY(1px);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.2);
             }
 
             #up-btn {
                 top: 0;
-                left: 50px;
-                border-radius: 10px 10px 0 0;
+                left: 55px;
+                border-radius: 8px 8px 0 0;
             }
 
             #down-btn {
                 bottom: 0;
-                left: 50px;
-                border-radius: 0 0 10px 10px;
+                left: 55px;
+                border-radius: 0 0 8px 8px;
             }
 
             #left-btn {
-                left: 0;
-                top: 50px;
-                border-radius: 10px 0 0 10px;
+                left: 15px;
+                top: 30px;
+                border-radius: 8px 0 0 8px;
             }
 
             #right-btn {
-                right: 0;
-                top: 50px;
-                border-radius: 0 10px 10px 0;
+                right: 15px;
+                top: 30px;
+                border-radius: 0 8px 8px 0;
             }
 
             /* Show mobile controls on touch devices and small screens */
             @media (max-width: 1024px), (hover: none) {
                 #mobile-controls {
                     display: block !important;
+                }
+                
+                #dialogue-boxes {
+                    padding-bottom: 140px; /* Add padding to prevent controls from overlapping dialogue */
                 }
             }
 
