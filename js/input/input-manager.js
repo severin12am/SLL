@@ -17,6 +17,11 @@ const inputState = {
         jump: false,
         interact: false
     },
+    // Mouse state
+    mouse: {
+        x: 0,
+        y: 0
+    },
     // Look rotation
     yaw: 0,
     pitch: 0,
@@ -24,7 +29,9 @@ const inputState = {
     lastTouchX: null,
     lastTouchY: null,
     // Input enabled
-    enabled: true
+    enabled: true,
+    // Pointer lock state
+    isPointerLocked: false
 };
 
 /**
@@ -76,7 +83,7 @@ export function setupEventListeners(camera) {
     setupKeyboardControls(inputState, INPUT_CONFIG);
     
     // Set up mouse controls
-    setupMouseControls(inputState, camera);
+    setupMouseControls(inputState, () => updateCamera(camera));
     
     // Set up touch controls if enabled in config
     if (INPUT_CONFIG.touchControls) {
