@@ -1291,6 +1291,47 @@
 
             // Update the startDialogueWithCharacter function to properly handle vendor
             async function startDialogueWithCharacter(character) {
+                // --- Temporary Simple Test for Mobile Debugging --- 
+                try {
+                    console.log("[Mobile Test] Attempting simple dialogue for:", character.characterId);
+            
+                    const dialogueContainer = document.createElement('div');
+                    dialogueContainer.className = 'dialogue-container'; // Start without position class initially
+            
+                    const dialogueBox = document.createElement('div');
+                    dialogueBox.className = 'dialogue-box';
+                    dialogueBox.textContent = `TEST: Dialogue with ${character.characterId}`;
+                    dialogueBox.style.backgroundColor = 'lightgreen'; // Make it obvious
+            
+                    dialogueContainer.appendChild(dialogueBox);
+                    dialogueBoxesElement.appendChild(dialogueContainer);
+            
+                    // Add to our array for management
+                    dialogueBoxes.push(dialogueContainer);
+                    if (dialogueBoxes.length > 10) {
+                        const oldestBox = dialogueBoxes.shift();
+                        oldestBox.remove();
+                    }
+            
+                    // Apply positioning after adding to DOM
+                    updateBoxPositions(); 
+            
+                    console.log("[Mobile Test] Simple box added to DOM. Count:", dialogueBoxes.length);
+            
+                    // --- Minimal state updates needed for testing ---
+                    hasStartedDialogue = true; // Prevent immediate re-triggering
+                    activeCharacter = character;
+                    lastCharacterId = character.characterId;
+                    dialogueStartCooldown = true; // Apply cooldown
+                    setTimeout(() => { dialogueStartCooldown = false; }, 2000);
+            
+                } catch (e) {
+                    console.error("[Mobile Test] Error creating simple test box:", e);
+                    dialogueStartCooldown = false; // Reset cooldown on error
+                }
+                // --- End of Temporary Simple Test ---
+
+                /* --- Original Logic Start (Commented Out for Mobile Test) ---
                 try {
                     // Check if we're already in dialogue with this character
                     if (character.characterId === lastCharacterId && hasStartedDialogue) {
@@ -1335,6 +1376,7 @@
                     console.error("Error starting dialogue:", error);
                     dialogueStartCooldown = false;
                 }
+                --- Original Logic End --- */
             }
 
             // Add helper function to reset dialogue
