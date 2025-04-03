@@ -265,6 +265,21 @@ export function registerCharacter(id, character) {
 }
 
 /**
+ * Reset dialogue state
+ * Clears active dialogue data and resets dialogue-related state
+ */
+export function resetDialogue() {
+    gameState.isDialogueActive = false;
+    gameState.activeCharacter = null;
+    gameState.dialogueOptions = [];
+    
+    // Re-enable input after dialogue ends
+    setInputEnabled(true);
+    
+    logger.debug('Dialogue state reset', 'GAME');
+}
+
+/**
  * Get the current game state
  * @returns {Object} Current game state
  */
