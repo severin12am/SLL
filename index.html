@@ -710,8 +710,8 @@
                 vendor: null,
                 popCat: null
             };
-            const DIALOGUE_DISTANCE = 1.5;
-            const DIALOGUE_RESET_DISTANCE = 1.5;
+            const DIALOGUE_DISTANCE = 2;
+            const DIALOGUE_RESET_DISTANCE = 2;
 
             // Add this variable with other initialization variables
             let resetCooldown = false;
@@ -1221,40 +1221,9 @@
                 if (newPosition.z < MAP_BOUNDARIES.minZ) newPosition.z = MAP_BOUNDARIES.minZ;
                 if (newPosition.z > MAP_BOUNDARIES.maxZ) newPosition.z = MAP_BOUNDARIES.maxZ;
 
-                // Check collision with all scene objects
-                let collisionDetected = false;
-                for (const object of sceneObjects) {
-                    if (object === player) continue; // Skip player collision check
-                    
-                    // Get object's bounding box
-                    const box = new THREE.Box3().setFromObject(object);
-                    
-                    // Use much smaller collision distance for vendor
-                    const objectCollisionDistance = object === vendor ? 0.1 : COLLISION_DISTANCE;
-                    box.expandByScalar(objectCollisionDistance);
-                    
-                    // Check if new position is inside the expanded box
-                    if (box.containsPoint(newPosition)) {
-                        collisionDetected = true;
-                        // Calculate the closest point on the box to the player
-                        const closestPoint = new THREE.Vector3();
-                        closestPoint.clamp(box.min, box.max);
-                        
-                        // Calculate direction to move away from the object
-                        const direction = newPosition.clone().sub(closestPoint).normalize();
-                        
-                        // Only adjust X and Z coordinates, keep Y (height) unchanged
-                        const adjustedPosition = closestPoint.clone().add(direction.multiplyScalar(objectCollisionDistance));
-                        newPosition.x = adjustedPosition.x;
-                        newPosition.z = adjustedPosition.z;
-                    }
-                }
-
-                // Update position only if no collision or if we have a valid adjusted position
-                if (!collisionDetected || (newPosition.x !== player.position.x || newPosition.z !== player.position.z)) {
-                    player.position.copy(newPosition);
-                    camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
-                }
+                // Update position
+                player.position.copy(newPosition);
+                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
 
                 // Check distances to all characters
                 let closestCharacter = null;
