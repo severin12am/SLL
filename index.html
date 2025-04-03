@@ -59,7 +59,7 @@
 
             .dialogue-box {
                 margin: 5px 0;
-                padding: 10x 15px;
+                padding: 10px 15px;
                 background: rgba(255, 248, 220, 0.95);
                 border-radius: 5px;
                 transition: transform 0.5s ease;
@@ -69,6 +69,18 @@
                 text-overflow: ellipsis;
                 line-height: 1.2;
                 pointer-events: auto; /* Ensure dialogue boxes receive touch events */
+            }
+
+            /* Style for individual words */
+            .word {
+                cursor: pointer; /* Indicate words are clickable */
+                display: inline-block; /* Needed for potential hover effects */
+                margin-right: 1px; /* Small space */
+                transition: background-color 0.2s ease;
+            }
+
+            .word:hover {
+                background-color: rgba(0, 102, 204, 0.1); /* Subtle hover */
             }
 
             .dialogue-box:hover {
@@ -138,15 +150,15 @@
             }
 
             .dialogue-container.position-1 { transform: translateY(0); }
-.dialogue-container.position-2 { transform: translateY(-40px); } /* Reduced from -50px */
-.dialogue-container.position-3 { transform: translateY(-80px); } /* Reduced from -100px */
-.dialogue-container.position-4 { transform: translateY(-120px); } /* Reduced from -150px */
-.dialogue-container.position-5 { transform: translateY(-160px); } /* Reduced from -200px */
-.dialogue-container.position-6 { transform: translateY(-200px); } /* Reduced from -250px */
-.dialogue-container.position-7 { transform: translateY(-240px); } /* Reduced from -300px */
-.dialogue-container.position-8 { transform: translateY(-280px); } /* Reduced from -350px */
-.dialogue-container.position-9 { transform: translateY(-320px); } /* Reduced from -400px */
-.dialogue-container.position-10 { transform: translateY(-360px); } /* Reduced from -450px */
+            .dialogue-container.position-2 { transform: translateY(-40px); } /* Reduced from -50px */
+            .dialogue-container.position-3 { transform: translateY(-80px); } /* Reduced from -100px */
+            .dialogue-container.position-4 { transform: translateY(-120px); } /* Reduced from -150px */
+            .dialogue-container.position-5 { transform: translateY(-160px); } /* Reduced from -200px */
+            .dialogue-container.position-6 { transform: translateY(-200px); } /* Reduced from -250px */
+            .dialogue-container.position-7 { transform: translateY(-240px); } /* Reduced from -300px */
+            .dialogue-container.position-8 { transform: translateY(-280px); } /* Reduced from -350px */
+            .dialogue-container.position-9 { transform: translateY(-320px); } /* Reduced from -400px */
+            .dialogue-container.position-10 { transform: translateY(-360px); } /* Reduced from -450px */
 
             .highlighted {
                 color: #000000; /* Change from #0066cc to black */
@@ -390,6 +402,24 @@
                     display: none !important;
                 }
             }
+
+            /* Explanation Box Styles */
+            #explanation-box {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                background: rgba(255, 255, 230, 0.9); /* Light yellow */
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 10px;
+                z-index: 1002; /* Above dialogue boxes */
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                max-width: 250px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                display: none; /* Initially hidden */
+                pointer-events: none; /* Prevent interaction */
+            }
         </style>
         <!-- Relaxed CSP to allow inline scripts, eval, workers, and external connections -->
         <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://esm.sh data: blob: chrome-extension:; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.supabase.co https://esm.sh chrome-extension:; connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co https://esm.sh chrome-extension:; worker-src 'self' blob:; img-src 'self' data: blob: chrome-extension:; media-src 'self' data: blob: chrome-extension:">
@@ -408,6 +438,9 @@
         <div id="ui-overlay">
             <div id="dialogue-boxes"></div>
         </div>
+
+        <!-- Explanation Box -->
+        <div id="explanation-box">Explanation appears here...</div>
 
         <!-- Add language selection UI -->
         <div id="language-selection">
@@ -466,8 +499,9 @@
             // Initialize variables first
             let dialogueSteps = {};
             let vendorResponses = {};
-            let mixer, player, vendor;
+            let mixer, player, vendor, flyingModel;
             const dialogueBoxesElement = document.getElementById('dialogue-boxes');
+            const explanationBoxElement = document.getElementById('explanation-box');
             let hasStartedDialogue = false;
             let hasShownVendorResponse = false;
             let lastRecognitionTime = 0;
@@ -616,6 +650,31 @@
                 });
             }
 
+            // Function to load the flying explanation model
+            function loadFlyingModel() {
+                return new Promise((resolve, reject) => {
+                    const flyingLoader = new GLTFLoader();
+                    flyingLoader.load('models/flying.glb', 
+                        (gltf) => {
+                            flyingModel = gltf.scene;
+                            // Initial position - will be updated in animate()
+                            flyingModel.position.set(0, 0, 0); 
+                            // Adjust scale as needed for the model
+                            flyingModel.scale.set(0.1, 0.1, 0.1); 
+                            flyingModel.visible = false; // Start hidden
+                            scene.add(flyingModel);
+                            console.log("Flying model loaded:", flyingModel);
+                            resolve(flyingModel);
+                        },
+                        undefined,
+                        (error) => {
+                            console.error('Error loading flying model:', error);
+                            reject(error);
+                        }
+                    );
+                });
+            }
+
             // Function to fetch dialogue data for a character
             async function fetchDialogueData(characterId, motherLang, newLang) {
                 try {
@@ -737,6 +796,7 @@
                 vendor: null,
                 popCat: null
             };
+
             const DIALOGUE_DISTANCE = 2;
             const DIALOGUE_RESET_DISTANCE = 2;
 
@@ -1042,6 +1102,16 @@
                             }
                             span.style.color = '#000000';
                             span.textContent = word;
+
+                            // *** ADD CLICK LISTENER FOR EXPLANATION ***
+                            span.addEventListener('click', (event) => {
+                                event.stopPropagation(); // Prevent triggering other clicks
+                                const clickedWord = event.target.textContent.replace(/[.,!?¿¡،؟'"]/g, '').trim(); // Clean the word
+                                if (clickedWord) {
+                                    showExplanation(clickedWord);
+                                }
+                            });
+
                             mainText.appendChild(span);
                             
                             if (index < words.length - 1) {
@@ -1088,6 +1158,14 @@
                         speakVendorResponse(text); // Reuse the vendor's speech function
                     };
                     container.appendChild(speakerButton);
+
+                    // Hide explanation box if user clicks outside a word
+                    box.addEventListener('click', (event) => {
+                        if (!event.target.classList.contains('word')) {
+                            hideExplanation();
+                        }
+                    });
+
 
                     return container;
                 } catch (error) {
@@ -1397,6 +1475,7 @@
             function resetDialogue() {
                 resetCooldown = true;
                 lastCharacterId = null;  // Reset the last character ID
+                hideExplanation(); // Hide explanation box when dialogue resets
                 
                 if (recognition) {
                     recognition.abort();
@@ -1553,6 +1632,7 @@
                     recognition.onerror = (event) => {
                         console.error("Speech recognition error:", event.error);
                         isRecognizing = false;
+                        hideExplanation(); // Hide explanation on error
                         
                         if (event.error === 'not-allowed') {
                             createDialogueBox("Error: Microphone access not granted. Please allow microphone access and reload the page.");
@@ -1574,6 +1654,7 @@
                     recognition.onend = () => {
                         console.log("Speech recognition ended");
                         isRecognizing = false;
+                        hideExplanation(); // Hide explanation when recognition ends
                         // Only restart if we're in an active dialogue and not speaking
                         if (hasStartedDialogue && !speechSynthesis.speaking) {
                             setTimeout(() => {
@@ -1586,6 +1667,8 @@
 
                     recognition.onresult = (event) => {
                         try {
+                            hideExplanation(); // Hide explanation when result received
+
                             if (!event.results || event.results.length === 0) {
                                 console.error('No results in recognition event');
                                 return;
@@ -1667,7 +1750,8 @@
                     // Load models concurrently
                     await Promise.all([
                         loadPopCat(),
-                        fetchCharacters() 
+                        fetchCharacters(),
+                        loadFlyingModel() // Load the new flying model
                     ]);
                     
                     console.log("All models and languages loaded, setting up start button.");
@@ -1696,6 +1780,7 @@
 
             // Make initGame async
             async function initGame() {
+                hideExplanation(); // Ensure explanation box is hidden at game start
                 if (!recognition) {
                     console.error("Speech recognition not initialized");
                     createDialogueBox("Speech recognition is not available. Please use a supported browser like Chrome, Edge, or Safari.");
@@ -1782,6 +1867,22 @@
                     if (popCatMixer) popCatMixer.update(delta);
                     updatePlayer(delta);
                     updateCamera();
+
+                    // Update flying model position to stay in top-left
+                    if (flyingModel && flyingModel.visible) {
+                        // Project top-left screen coords (-0.9, 0.9) to world space
+                        screenPositionVector.set(-0.8, 0.8, 0.5); // Use NDC (Normalized Device Coordinates)
+                        screenPositionVector.unproject(camera); // Convert NDC to world space
+                        
+                        // Position model slightly in front of camera along the projected direction
+                        const dir = screenPositionVector.sub(camera.position).normalize();
+                        const distance = 2; // Adjust distance from camera as needed
+                        flyingModel.position.copy(camera.position).add(dir.multiplyScalar(distance));
+                        
+                        // Optional: Make the model always face the camera
+                        flyingModel.lookAt(camera.position);
+                    }
+
                     stats.update();
                     renderer.render(scene, camera);
                 } catch (error) {
@@ -1906,6 +2007,7 @@
             // Update the handleReplayClick function
             function handleReplayClick(boxIndex, isVendorBox) {
                 console.log('Handling replay:', { boxIndex, isVendorBox });
+                hideExplanation(); // Hide explanation on replay
                 
                 // Stop current recognition and speech
                 if (recognition && isRecognizing) {
