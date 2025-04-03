@@ -660,16 +660,12 @@
             let dialogueStartCooldown = false;
             let lastCharacterId = null;
 
-            // Update the fence variable to be an array
-            let fences = [];
-            const COLLISION_DISTANCE = 1.0; // Distance to maintain from fence
-
             // Add boundary limits after other initialization variables
             const MAP_BOUNDARIES = {
-                minX: -5,
-                maxX: 5,
-                minZ: -5,
-                maxZ: 5
+                minX: -3,
+                maxX: 3,
+                minZ: -3,
+                maxZ: 3
             };
 
             // Update the loadFence function to handle multiple fences
@@ -1573,9 +1569,6 @@
                     hasStartedDialogue = false;
                     dialogueBoxes.forEach(box => box.remove());
                     dialogueBoxes = [];
-
-                    // Load fence first
-                    await loadFence();
 
                     // Fetch dialogue data for the current character (starting with Market Vendor, id: 1)
                     await fetchDialogueData(1, languageConfig.motherLanguage, languageConfig.newLanguage);
