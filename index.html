@@ -553,40 +553,67 @@
 
             // Update the fetchCharacters function to properly initialize the vendor
             function fetchCharacters() {
-                return supabase
-                    .from('characters')
-                    .select('*')
-                    .eq('is_active', true)
-                    .then(({ data: characters, error }) => {
-                        if (error) {
-                            console.error('Error fetching characters:', error);
-                            return;
-                        }
+                return new Promise((resolve, reject) => {
+                    supabase
+                        .from('characters')
+                        .select('*')
+                        .eq('is_active', true)
+                        .then(({ data: charactersData, error }) => {
+                            if (error) {
+                                console.error('Error fetching characters:', error);
+                                return reject(error);
+                            }
 
-                        console.log("Fetched characters:", characters);
+                            console.log("Fetched characters data:", charactersData);
 
-                        // Load each character model
-                        characters.forEach(character => {
-                            // Skip Pop Cat as it's handled separately
-                            if (character.name === 'Pop Cat') return;
+                            const loadingPromises = [];
 
-                            const loader = new GLTFLoader();
-                            loader.load(character.model_path, (gltf) => {
-                                const model = gltf.scene;
-                                model.position.set(character.position_x, character.position_y, character.position_z);
-                                model.scale.set(character.scale_x, character.scale_y, character.scale_z);
-                                model.characterId = character.id; // Add character ID to the model
-                                scene.add(model);
-                                
-                                if (character.name === 'Market Vendor') {
-                                    vendor = model;
-                                    characters.vendor = model;
-                                    registerCollidableObject(model); // Register vendor for collision
-                                    console.log("Vendor loaded with ID:", character.id, vendor);
-                                }
+                            // Load each character model
+                            charactersData.forEach(character => {
+                                // Skip Pop Cat as it's handled separately
+                                if (character.name === 'Pop Cat') return;
+
+                                const promise = new Promise((resolveLoad, rejectLoad) => {
+                                    const loader = new GLTFLoader();
+                                    loader.load(character.model_path, 
+                                        (gltf) => {
+                                            const model = gltf.scene;
+                                            model.position.set(character.position_x, character.position_y, character.position_z);
+                                            model.scale.set(character.scale_x, character.scale_y, character.scale_z);
+                                            model.characterId = character.id; // Add character ID to the model
+                                            scene.add(model);
+                                            registerCollidableObject(model); // Register model for collision detection
+                                            
+                                            if (character.name === 'Market Vendor') {
+                                                vendor = model;
+                                                characters.vendor = model;
+                                                console.log("Vendor loaded with ID:", character.id, vendor);
+                                            }
+                                            // Also store other characters if needed, e.g. based on name or ID
+                                            // characters[character.name] = model; // Example
+                                            
+                                            resolveLoad(model); // Resolve the promise for this character
+                                        },
+                                        undefined,
+                                        (error) => {
+                                            console.error(`Error loading model ${character.name}:`, error);
+                                            rejectLoad(error); // Reject the promise for this character
+                                        }
+                                    );
+                                });
+                                loadingPromises.push(promise);
                             });
-                        });
-                    });
+
+                            // Wait for all character models to load
+                            Promise.all(loadingPromises)
+                                .then(() => {
+                                    console.log("All character models loaded.");
+                                    resolve(); // Resolve the main fetchCharacters promise
+                                })
+                                .catch(reject); // If any model fails to load, reject the main promise
+                        })
+                        .catch(reject); // Catch errors from the initial Supabase fetch
+                });
             }
 
             // Function to fetch dialogue data for a character
@@ -731,6 +758,10 @@
             // Add collision detection variables after other initialization variables
             const COLLISION_DISTANCE = 1.0; // Distance to maintain from objects
             const sceneObjects = []; // Array to store all collidable objects
+
+            // Add these variables at the top with other initialization variables
+            let lastDistanceCheck = 0;
+            const DISTANCE_CHECK_COOLDOWN = 500; // Check distance every 500ms instead of every frame
 
             // Add this function to register objects for collision detection
             function registerCollidableObject(object) {
@@ -1198,7 +1229,7 @@
                 return matchCount / maxLength;
             }
 
-            // Update the updatePlayer function to handle collisions more smoothly
+            // Update the updatePlayer function to include cooldown for distance checks
             function updatePlayer(delta) {
                 if (!player) return;
                 if (isNaN(delta) || delta <= 0) return;
@@ -1225,38 +1256,44 @@
                 player.position.copy(newPosition);
                 camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
 
-                // Check distances to all characters
-                let closestCharacter = null;
-                let closestDistance = Infinity;
+                // Only check distances if cooldown has passed
+                const currentTime = Date.now();
+                if (currentTime - lastDistanceCheck >= DISTANCE_CHECK_COOLDOWN) {
+                    lastDistanceCheck = currentTime;
 
-                // Debug vendor position
-                if (vendor) {
-                    console.log("Vendor position:", vendor.position);
-                    console.log("Player position:", player.position);
-                    const vendorDistance = calculateDistance(player.position, vendor.position);
-                    console.log("Distance to vendor:", vendorDistance);
-                }
+                    // Check distances to all characters
+                    let closestCharacter = null;
+                    let closestDistance = Infinity;
 
-                Object.values(characters).forEach(character => {
-                    if (!character) return;
-                    const distance = calculateDistance(player.position, character.position);
-                    console.log("Distance to character:", character.characterId, distance);
-                    if (distance < DIALOGUE_DISTANCE && distance < closestDistance) {
-                        closestCharacter = character;
-                        closestDistance = distance;
+                    // Debug vendor position (only log if we're checking distances)
+                    if (vendor) {
+                        console.log("Vendor position:", vendor.position);
+                        console.log("Player position:", player.position);
+                        const vendorDistance = calculateDistance(player.position, vendor.position);
+                        console.log("Distance to vendor:", vendorDistance);
                     }
-                });
 
-                // If player moves too far from active character, reset dialogue
-                if (activeCharacter && calculateDistance(player.position, activeCharacter.position) > DIALOGUE_RESET_DISTANCE) {
-                    if (hasStartedDialogue && !resetCooldown) {
-                        resetDialogue();
+                    Object.values(characters).forEach(character => {
+                        if (!character) return;
+                        const distance = calculateDistance(player.position, character.position);
+                        console.log("Distance to character:", character.characterId, distance);
+                        if (distance < DIALOGUE_DISTANCE && distance < closestDistance) {
+                            closestCharacter = character;
+                            closestDistance = distance;
+                        }
+                    });
+
+                    // If player moves too far from active character, reset dialogue
+                    if (activeCharacter && calculateDistance(player.position, activeCharacter.position) > DIALOGUE_RESET_DISTANCE) {
+                        if (hasStartedDialogue && !resetCooldown) {
+                            resetDialogue();
+                        }
                     }
-                }
-                // If player is close to a character and dialogue hasn't started
-                else if (closestCharacter && !hasStartedDialogue && !resetCooldown) {
-                    console.log("Starting dialogue with closest character:", closestCharacter.characterId);
-                    startDialogueWithCharacter(closestCharacter);
+                    // If player is close to a character and dialogue hasn't started
+                    else if (closestCharacter && !hasStartedDialogue && !resetCooldown) {
+                        console.log("Starting dialogue with closest character:", closestCharacter.characterId);
+                        startDialogueWithCharacter(closestCharacter);
+                    }
                 }
             }
 
@@ -1576,26 +1613,33 @@
             // Initialize everything when the page loads
             window.addEventListener('load', async () => {
                 try {
-                await initVendorVoice();
-                    await fetchLanguages();
-                    await loadPopCat();  // Load Pop Cat once
-                    await fetchCharacters();  // Load other characters
-                
+                    await initVendorVoice();
+                    await fetchLanguages(); // Fetch languages first
+                    
+                    // Load models concurrently
+                    await Promise.all([
+                        loadPopCat(),
+                        fetchCharacters() 
+                    ]);
+                    
+                    console.log("All models and languages loaded, setting up start button.");
+
                     document.getElementById('start-game').addEventListener('click', async () => {
-                    languageConfig.motherLanguage = document.getElementById('mother-language').value;
-                    languageConfig.newLanguage = document.getElementById('new-language').value;
-                    
-                    if (languageConfig.motherLanguage === languageConfig.newLanguage) {
-                        alert('Please select different languages for learning');
-                        return;
-                    }
-                    
-                    document.getElementById('language-selection').style.display = 'none';
-                        setupVoice();
+                        languageConfig.motherLanguage = document.getElementById('mother-language').value;
+                        languageConfig.newLanguage = document.getElementById('new-language').value;
+                        
+                        if (languageConfig.motherLanguage === languageConfig.newLanguage) {
+                            alert('Please select different languages for learning');
+                            return;
+                        }
+                        
+                        document.getElementById('language-selection').style.display = 'none';
+                        setupVoice(); // Setup voice after languages are confirmed
                         await initGame();
-                });
+                    });
                 } catch (error) {
-                    console.error('Error initializing:', error);
+                    console.error('Error during initial loading:', error);
+                    // Optionally display an error message to the user
                 }
             });
 
