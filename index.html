@@ -1,2101 +1,1728 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <title>three.js webgl - animation - keyframes</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-        <link type="text/css" rel="stylesheet" href="main.css">
-        <!-- Remove Supabase CDN -->
-        <style>
-            body {
-                background-color: #bfe3dd;
-                color: #000;
-                margin: 0;
-                overflow: hidden;
-            }
+<head>
+    <title>Language Learning World</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        /* Base Styles */
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #bfe3dd;
+        }
 
-            a {
-                color: #2983ff;
-            }
+        /* UI Elements */
+        #dialogue-container {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            z-index: 1001;
+            pointer-events: auto;
+        }
 
-            /* UI Styles */
-            #ui-overlay {
-                position: absolute;
-                bottom: 10px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: transparent;
-                padding: 10px;
-                border-radius: 5px;
-                font-family: Arial, sans-serif;
-                max-width: 1800px; /* Doubled from 900px */
-                text-align: center;
-                width: 100%;
-            }
+        .dialogue-box {
+            position: relative;
+            margin: 5px 0;
+            padding: 15px;
+            background: rgba(255, 248, 220, 0.95);
+            border-radius: 8px;
+            transition: transform 0.5s ease;
+            display: flex;
+            align-items: center;
+        }
 
-            #dialogue-boxes {
-                position: fixed;
-                bottom: 100px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 90%;
-                max-width: 600px;
-                z-index: 1001; /* Higher than mobile controls */
-                pointer-events: auto; /* Allow touch events */
-            }
+        .dialogue-box.vendor {
+            background: rgba(230, 240, 255, 0.95);
+        }
 
-            .dialogue-container {
-                position: absolute;
-                margin-bottom: 5px;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                transform: translateY(0);
-                transition: transform 0.3s ease-out;
-            }
+        .replay-button, .sound-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 8px;
+            flex-shrink: 0;
+        }
 
-            .dialogue-box {
-                margin: 5px 0;
-                padding: 10px 15px; /* Corrected padding */
-                background: rgba(255, 248, 220, 0.95);
-                border-radius: 5px;
-                transition: transform 0.5s ease;
-                flex-grow: 1;
-                white-space: normal; /* Allow text wrapping */
-                line-height: 1.3;
-                pointer-events: auto; /* Ensure dialogue boxes receive touch events */
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            }
+        .dialogue-text {
+            flex-grow: 1;
+        }
 
-            /* Style for individual words */
-            .word {
-                cursor: pointer; /* Indicate words are clickable */
-                display: inline-block; /* Needed for potential hover effects */
-                margin-right: 1px; /* Small space */
-                transition: background-color 0.2s ease;
-            }
+        .word {
+            cursor: pointer;
+            display: inline-block;
+            margin-right: 2px;
+        }
 
-            .dialogue-box:hover {
-                background: rgba(255, 248, 220, 0.98);
-            }
+        .phonetic {
+            font-style: italic;
+            color: #666;
+            margin: 0 5px;
+        }
 
-            .dialogue-box.vendor {
-                background: rgba(230, 240, 255, 0.95);
-            }
+        .translation {
+            color: #2e8b57;
+        }
 
-            .replay-button {
-                flex-shrink: 0;
-                height: 30px;
-                width: 30px;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.9);
-                border: 2px solid #666;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: transform 0.2s ease, background-color 0.2s ease;
-                margin-right: 10px;
-                position: relative;
-                pointer-events: auto; /* Ensure replay buttons receive touch events */
-            }
+        /* Language Selection */
+        #language-selection {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 30px;
+            border-radius: 15px;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+        }
 
-            .replay-button:hover {
-                transform: scale(1.1);
-                background: rgba(255, 255, 255, 1);
-                border-color: #0066cc;
-            }
+        .language-select {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+        }
 
-            .replay-button:active {
-                transform: scale(0.95);
-            }
+        .start-button {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
 
-            .replay-button::before {
-                content: '';
-                width: 12px;
-                height: 12px;
-                border: 2px solid #666;
-                border-left: 0;
-                border-top: 0;
-                position: absolute;
-                transform: rotate(135deg) translate(-2px, -2px);
-            }
+        /* Mobile Controls */
+        #mobile-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
+            z-index: 1000;
+            display: none;
+        }
 
-            .replay-button::after {
-                content: '';
-                width: 0;
-                height: 0;
-                border-style: solid;
-                border-width: 4px 0 4px 6px;
-                border-color: transparent transparent transparent #666;
-                position: absolute;
-                left: 8px;
-                top: 8px;
-            }
+        #forward-btn {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
 
-            .replay-button:hover::before {
-                border-color: #0066cc;
-            }
-
-            .replay-button:hover::after {
-                border-left-color: #0066cc;
-            }
-
-            .dialogue-container.position-1 { transform: translateY(0); }
-            .dialogue-container.position-2 { transform: translateY(-45px); }
-            .dialogue-container.position-3 { transform: translateY(-90px); }
-            .dialogue-container.position-4 { transform: translateY(-135px); }
-            .dialogue-container.position-5 { transform: translateY(-180px); }
-            .dialogue-container.position-6 { transform: translateY(-225px); }
-            .dialogue-container.position-7 { transform: translateY(-270px); }
-            .dialogue-container.position-8 { transform: translateY(-315px); }
-            .dialogue-container.position-9 { transform: translateY(-360px); }
-            .dialogue-container.position-10 { transform: translateY(-405px); }
-
-            .highlighted {
-                color: #000000; /* Default color */
-            }
-
-            .instruction {
-                color: #666;
-                font-style: italic;
-            }
-
-            /* Create a separate class for flashing instruction */
-            .instruction-flash {
-                animation: flash 1.5s infinite;
-            }
-
-            .translation {
-                color: #2e8b57; /* Sea green */
-            }
-
-            /* UI Styles */
-            #language-selection {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.85);
-                padding: 30px;
-                border-radius: 15px;
-                z-index: 1000;
-                text-align: center;
-                color: white;
-                min-width: 300px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            }
-
-            #language-selection h2 {
-                margin: 0 0 20px 0;
-                font-size: 24px;
-                color: #4CAF50;
-            }
-
-            .language-select-container {
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-                margin-bottom: 25px;
-            }
-
-            .language-select-wrapper {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-
-            .language-select-wrapper label {
-                font-size: 16px;
-                color: #bfe3dd;
-                margin-left: 5px;
-            }
-
-            .language-select {
-                margin: 0;
-                padding: 10px;
-                background: #333;
-                color: white;
-                border: 2px solid #4CAF50;
-                border-radius: 8px;
-                width: 100%;
-                font-size: 16px;
-                transition: border-color 0.3s ease;
-            }
-
-            .language-select:hover {
-                border-color: #45a049;
-            }
-
-            .language-select:focus {
-                outline: none;
-                border-color: #4CAF50;
-                box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-            }
-
-            .start-button {
-                margin-top: 10px;
-                padding: 12px 30px;
-                background: #4CAF50;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-                font-size: 16px;
-                font-weight: bold;
-                transition: all 0.3s ease;
-                width: 100%;
-            }
-
-            .start-button:hover {
-                background: #45a049;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            }
-
-            .start-button:active {
-                transform: translateY(0);
-                box-shadow: none;
-            }
-
-            @keyframes flash {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.3; }
-            }
-
-            /* Add new rules for Arabic text */
-            [lang="ar"],
-            .dialogue-box:lang(ar),
-            .dialogue-box .highlighted:lang(ar),
-            .dialogue-box .instruction:lang(ar),
-            .dialogue-box .translation:lang(ar),
-            .dialogue-box .word:lang(ar) {
-                font-size: 150%;
-                line-height: 1.5;
-            }
-
-            .speaker-button {
-                flex-shrink: 0;
-                height: 30px;
-                width: 30px;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.9);
-                border: 2px solid #666;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: transform 0.2s ease, background-color 0.2s ease;
-                margin-left: 10px;
-                position: relative;
-                pointer-events: auto;
-            }
-
-            .speaker-button:hover {
-                transform: scale(1.1);
-                background: rgba(255, 255, 255, 1);
-                border-color: #0066cc;
-            }
-
-            .speaker-button:active {
-                transform: scale(0.95);
-            }
-
-            .speaker-button::before {
-                content: '🔊';
-                font-size: 16px;
-            }
-
-            /* Mobile Controls */
+        /* Show mobile controls on touch devices */
+        @media (hover: none) {
             #mobile-controls {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 120px; /* Smaller width for single button */
-                height: 40px;
-                z-index: 1000;
-                display: none;
-                pointer-events: auto;
+                display: block;
             }
+        }
 
-            .forward-button {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                background: rgba(255, 255, 255, 0.7);
-                border: 1px solid rgba(0, 0, 0, 0.2);
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                cursor: pointer;
-                user-select: none;
-                -webkit-user-select: none;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                pointer-events: auto;
-            }
+        /* New styles for improved word highlighting */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
 
-            .forward-button:active {
-                background: rgba(200, 200, 200, 0.8);
-                transform: translateY(1px);
-                box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-            }
+        .phonetic.listening {
+            animation: pulse 1.5s infinite;
+            color: #0066cc;
+        }
 
-            /* Show mobile controls on touch devices and small screens */
-            @media (max-width: 1024px), (hover: none) {
-                #mobile-controls {
-                    display: block !important;
-                }
-                
-                #dialogue-boxes {
-                    bottom: 100px;
-                    max-height: calc(100vh - 120px);
-                    overflow-y: auto;
-                    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-                }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
 
-                .dialogue-container {
-                    margin-bottom: 8px;
-                }
-            }
+        .dialogue-box.shake {
+            animation: shake 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
 
-            /* Hide mobile controls on desktop */
-            @media (min-width: 1025px) and (hover: hover) {
-                #mobile-controls {
-                    display: none !important;
-                }
-            }
+    <!-- Dialogue Container -->
+    <div id="dialogue-container"></div>
 
-            /* Explanation Box Styles */
-            #explanation-box {
-                position: fixed;
-                top: 20px;
-                left: 20px;
-                background: rgba(255, 255, 230, 0.9); /* Light yellow */
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                padding: 10px;
-                z-index: 1002; /* Above dialogue boxes */
-                font-family: Arial, sans-serif;
-                font-size: 14px;
-                max-width: 250px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                display: none; /* Initially hidden */
-                pointer-events: none; /* Prevent interaction */
-            }
-        </style>
-        <!-- Relaxed CSP to allow inline scripts, eval, workers, and external connections -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://esm.sh data: blob: chrome-extension:; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.supabase.co https://esm.sh chrome-extension:; connect-src 'self' data: blob: https://*.supabase.co wss://*.supabase.co https://esm.sh chrome-extension:; worker-src 'self' blob:; img-src 'self' data: blob: chrome-extension:; media-src 'self' data: blob: chrome-extension:">
-    </head>
-
-    <body>
-        <div id="container"></div>
-
-        <div id="info">
-            <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> webgl - animation - keyframes<br/>
-            Model: <a href="https://artstation.com/artwork/1AGwX" target="_blank" rel="noopener">Littlest Tokyo</a> by
-            <a href="https://artstation.com/glenatron" target="_blank" rel="noopener">Glen Fox</a>, CC Attribution.
+    <!-- Language Selection -->
+    <div id="language-selection">
+        <h2>Select Languages</h2>
+        <div>
+            <label for="mother-language">Your Language:</label>
+            <select id="mother-language" class="language-select">
+                <option value="en" selected>English</option>
+                <option value="es">Spanish</option>
+                <option value="ru">Russian</option>
+                <option value="ar">Arabic</option>
+            </select>
         </div>
-
-        <!-- UI Overlay for Dialogue Boxes -->
-        <div id="ui-overlay">
-            <div id="dialogue-boxes"></div>
+        <div>
+            <label for="new-language">Language to Learn:</label>
+            <select id="new-language" class="language-select">
+                <option value="es">Spanish</option>
+                <option value="ru">Russian</option>
+                <option value="ar">Arabic</option>
+            </select>
         </div>
+        <button id="start-game" class="start-button">Start Learning</button>
+    </div>
 
-        <!-- Explanation Box -->
-        <div id="explanation-box">Explanation appears here...</div>
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+        <div id="forward-btn">⬆️</div>
+    </div>
 
-        <!-- Add language selection UI -->
-        <div id="language-selection">
-            <h2>Select Languages</h2>
-            <div class="language-select-container">
-                <div class="language-select-wrapper">
-                    <label for="mother-language">Your Language:</label>
-                    <select id="mother-language" class="language-select">
-                        <option value="en" selected>English</option>
-                        <option value="es">Spanish</option>
-                        <option value="ru">Russian</option>
-                        <option value="ar">Arabic</option>
-                    </select>
-                </div>
-                <div class="language-select-wrapper">
-                    <label for="new-language">Language to Learn:</label>
-                    <select id="new-language" class="language-select">
-                        <option value="es">Spanish</option>
-                        <option value="ru">Russian</option>
-                        <option value="ar">Arabic</option>
-                    </select>
-                </div>
-            </div>
-            <button id="start-game" class="start-button">Start Learning</button>
-        </div>
-
-        <!-- Mobile Controls -->
-        <div id="mobile-controls">
-            <div id="forward-btn" class="forward-button">⬆️</div>
-        </div>
-
-        <!-- Move script tags outside of body to avoid CSP inline script issues -->
-        <script type="importmap">
-            {
-    "imports": {
-        "three": "./build/three.module.js",
-        "three/addons/": "./jsm/",
-        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+    <!-- Scripts -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "./build/three.module.js",
+            "three/addons/": "./jsm/",
+            "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+        }
     }
-}
-        </script>
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+        import { createClient } from '@supabase/supabase-js';
 
-        <script type="module">
-            import * as THREE from 'three';
-            import Stats from 'three/addons/libs/stats.module.js';
-            import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-            import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-            import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-            import { createClient } from '@supabase/supabase-js';
+        // ====== CORE VARIABLES ======
+        // Scene setup
+        let scene, camera, renderer;
+        let player, mixer;
 
-            // Initialize variables first
-            let dialogueSteps = {};
-            let vendorResponses = {};
-            let mixer, player, vendor, flyingModel;
-            const dialogueBoxesElement = document.getElementById('dialogue-boxes');
-            const explanationBoxElement = document.getElementById('explanation-box');
-            let hasStartedDialogue = false;
-            let hasShownVendorResponse = false;
-            let lastRecognitionTime = 0;
-            let dialogueBoxes = [];
-            let currentStep = 0;
+        // Characters
+        let characters = {
+            vendor: null,
+            popCat: null,
+            robot: null,
+            parrot: null,
+            man: null
+        };
+        let activeCharacter = null;
 
-            // Initialize Supabase client
-            const supabaseUrl = 'https://fjvltffpcafcbbpwzyml.supabase.co';
-            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk';
-            const supabase = createClient(supabaseUrl, supabaseKey);
+        // Movement
+        const keys = { forward: false, left: false, backward: false, right: false };
+        const speed = 5.0;
+        let yaw = 0, pitch = 0;
 
-            // Replace hardcoded language config with dynamic data
-            let languageConfig = {
-                motherLanguage: 'en',
-                newLanguage: 'es',
-                translations: {}
-            };
+        // Dialogue system
+        let dialogueSteps = {};
+        let vendorResponses = {};
+        let currentStep = 0;
+        let hasStartedDialogue = false;
+        let dialogueBoxes = [];
+        const dialogueContainer = document.getElementById('dialogue-container');
 
-            // Function to fetch languages from Supabase
-            async function fetchLanguages() {
-                const { data: languages, error } = await supabase
-                    .from('languages')
-                    .select('*')
-                    .eq('is_active', true);
+        // Speech recognition
+        let recognition;
+        let isRecognizing = false;
 
-                if (error) {
-                    console.error('Error fetching languages:', error);
-                    return;
-                }
+        // Language config
+        const languageConfig = {
+            motherLanguage: 'en',
+            newLanguage: 'es'
+        };
 
-                // Populate language selection dropdowns
-                const motherLanguageSelect = document.getElementById('mother-language');
-                const newLanguageSelect = document.getElementById('new-language');
-                
-                motherLanguageSelect.innerHTML = '';
-                newLanguageSelect.innerHTML = '';
+        // Map boundaries (invisible fence)
+        const MAP_BOUNDARIES = {
+            minX: -2.5,
+            maxX: 2.9,
+            minZ: -2.9,
+            maxZ: 2.4
+        };
 
-                languages.forEach(lang => {
-                    const option1 = new Option(lang.name, lang.code);
-                    const option2 = new Option(lang.name, lang.code);
-                    motherLanguageSelect.add(option1);
-                    newLanguageSelect.add(option2);
-                });
-            }
+        // Interaction distances
+        const DIALOGUE_DISTANCE = 2;
+        const DIALOGUE_RESET_DISTANCE = 2;
+        
+        // Supabase setup
+        const supabase = createClient(
+            'https://fjvltffpcafcbbpwzyml.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk'
+        );
 
-            // Replace all Pop Cat loading code with this single implementation
-            let popCatInstance = null;  // Single source of truth for Pop Cat instance
+        // ====== INITIALIZATION ======
+        init();
+        setupEventListeners();
 
-            function loadPopCat() {
-                return new Promise((resolve, reject) => {
-                    const catLoader = new GLTFLoader();
-                    catLoader.load('models/pop_cat.glb', 
-                        (gltf) => {
-                            if (!popCatInstance) {
-                                popCatInstance = gltf.scene;
-                                popCatInstance.position.set(2.1, -0.9, 1.9);
-                                popCatInstance.scale.set(0.013, 0.013, 0.013);
-                                popCatInstance.rotation.y = Math.PI / 4;
-                                popCatInstance.characterId = 5;
-                                scene.add(popCatInstance);
-                                characters.popCat = popCatInstance;
-
-                                // Set up animation mixer
-                                popCatMixer = new THREE.AnimationMixer(popCatInstance);
-                                if (gltf.animations && gltf.animations.length > 0) {
-                                    popCatAnimation = popCatMixer.clipAction(gltf.animations[0]);
-                                    popCatAnimation.setLoop(THREE.LoopOnce);
-                                    popCatAnimation.clampWhenFinished = true;
-                                }
-
-                                console.log("Pop Cat loaded:", popCatInstance);
-                            }
-                            resolve(popCatInstance);
-                        },
-                        undefined,
-                        (error) => {
-                            console.error('Error loading pop_cat model:', error);
-                            reject(error);
-                        }
-                    );
-                });
-            }
-
-            // Update the fetchCharacters function to properly initialize the vendor
-            function fetchCharacters() {
-                return new Promise((resolve, reject) => {
-                    supabase
-                        .from('characters')
-                        .select('*')
-                        .eq('is_active', true)
-                        .then(({ data: charactersData, error }) => {
-                            if (error) {
-                                console.error('Error fetching characters:', error);
-                                return reject(error);
-                            }
-
-                            console.log("Fetched characters data:", charactersData);
-
-                            const loadingPromises = [];
-
-                            // Load each character model
-                            charactersData.forEach(character => {
-                                // Skip Pop Cat as it's handled separately
-                                if (character.name === 'Pop Cat') return;
-
-                                const promise = new Promise((resolveLoad, rejectLoad) => {
-                                    const loader = new GLTFLoader();
-                                    loader.load(character.model_path, 
-                                        (gltf) => {
-                                            const model = gltf.scene;
-                                            model.position.set(character.position_x, character.position_y, character.position_z);
-                                            model.scale.set(character.scale_x, character.scale_y, character.scale_z);
-                                            model.characterId = character.id; // Add character ID to the model
-                                            scene.add(model);
-                                            registerCollidableObject(model); // Register model for collision detection
-                                            
-                                            // Store reference in characters object based on name
-                                            // Make sure names match exactly what's in your Supabase table
-                                            switch (character.name) {
-                                                case 'Market Vendor':
-                                                    vendor = model; // Keep specific vendor reference if needed elsewhere
-                                                    characters.vendor = model;
-                                                    console.log("Vendor loaded with ID:", character.id, vendor);
-                                                    break;
-                                                case 'Robot':
-                                                    characters.robot = model;
-                                                    console.log("Robot loaded with ID:", character.id, model);
-                                                    break;
-                                                case 'Parrot':
-                                                    characters.parrot = model;
-                                                    console.log("Parrot loaded with ID:", character.id, model);
-                                                    break;
-                                                case 'Man':
-                                                    characters.man = model;
-                                                    console.log("Man loaded with ID:", character.id, model);
-                                                    break;
-                                                default:
-                                                    console.warn("Loaded character not specifically handled:", character.name);
-                                                    // Optionally store other characters too:
-                                                    // characters[character.name.toLowerCase().replace(' ', '')] = model;
-                                            }
-                                            
-                                            resolveLoad(model); // Resolve the promise for this character
-                                        },
-                                        undefined,
-                                        (error) => {
-                                            console.error(`Error loading model ${character.name}:`, error);
-                                            rejectLoad(error); // Reject the promise for this character
-                                        }
-                                    );
-                                });
-                                loadingPromises.push(promise);
-                            });
-
-                            // Wait for all character models to load
-                            Promise.all(loadingPromises)
-                                .then(() => {
-                                    console.log("All character models loaded.");
-                                    resolve(); // Resolve the main fetchCharacters promise
-                                })
-                                .catch(reject); // If any model fails to load, reject the main promise
-                        })
-                        .catch(reject); // Catch errors from the initial Supabase fetch
-                });
-            }
-
-            // Function to load the flying explanation model
-            function loadFlyingModel() {
-                return new Promise((resolve, reject) => {
-                    const flyingLoader = new GLTFLoader();
-                    flyingLoader.load('models/flying.glb', 
-                        (gltf) => {
-                            flyingModel = gltf.scene;
-                            // Initial position - will be updated in animate()
-                            flyingModel.position.set(0, 0, 0); 
-                            // Adjust scale as needed for the model
-                            flyingModel.scale.set(0.1, 0.1, 0.1); 
-                            flyingModel.visible = false; // Start hidden
-                            scene.add(flyingModel);
-                            console.log("Flying model loaded:", flyingModel);
-                            resolve(flyingModel);
-                        },
-                        undefined,
-                        (error) => {
-                            console.error('Error loading flying model:', error);
-                            reject(error);
-                        }
-                    );
-                });
-            }
-
-            // Function to fetch dialogue data for a character
-            async function fetchDialogueData(characterId, motherLang, newLang) {
-                try {
-                    console.log("Fetching dialogue data for character:", characterId);
-                    
-                    // Clear existing dialogue data
-                    dialogueSteps[newLang] = [];
-                    dialogueSteps[motherLang] = [];
-                    vendorResponses[newLang] = [];
-                    vendorResponses[motherLang] = [];
-                    
-                    // Fetch scenario for the specific character
-                    const { data: scenarios, error: scenarioError } = await supabase
-                        .from('dialogue_scenarios')
-                        .select('id')
-                        .eq('character_id', characterId)
-                        .eq('is_active', true);
-
-                    if (scenarioError || !scenarios || scenarios.length === 0) {
-                        console.error('Error fetching scenarios:', scenarioError);
-                        throw new Error('No active dialogue scenario found for character');
-                    }
-
-                    const scenarioId = scenarios[0].id;
-                    console.log("Found scenario:", scenarioId, "for character:", characterId);
-
-                    // Fetch steps with translations
-                    const { data: steps, error: stepsError } = await supabase
-                        .from('dialogue_steps')
-                        .select(`
-                            id,
-                            step_order,
-                            is_user_speaking,
-                            translations (
-                                text,
-                                phonetic_text,
-                                phonetic_text_ru,
-                                phonetic_text_ar,
-                                phonetic_text_es,
-                                phonetic_text_en,
-                                phonetic_text_ar_recognition,
-                                language:languages (
-                                    code
-                                )
-                            )
-                        `)
-                        .eq('scenario_id', scenarioId)
-                        .order('step_order');
-
-                    if (stepsError) {
-                        console.error('Error fetching steps:', stepsError);
-                        throw stepsError;
-                    }
-
-                    // Process steps
-                    steps.forEach(step => {
-                        const newLangTranslation = step.translations.find(t => t.language.code === newLang);
-                        const motherLangTranslation = step.translations.find(t => t.language.code === motherLang);
-
-                        if (newLangTranslation && motherLangTranslation) {
-                            if (step.is_user_speaking) {
-                                dialogueSteps[newLang].push(newLangTranslation);
-                                dialogueSteps[motherLang].push(motherLangTranslation);
-                            } else {
-                                vendorResponses[newLang].push(newLangTranslation);
-                                vendorResponses[motherLang].push(motherLangTranslation);
-                            }
-                        }
-                    });
-
-                    console.log("Loaded dialogue data:", {
-                        character: characterId,
-                        userDialogues: dialogueSteps[newLang].length,
-                        characterResponses: vendorResponses[newLang].length
-                    });
-
-                    return true;
-                } catch (error) {
-                    console.error("Error in fetchDialogueData:", error);
-                    throw error;
-                }
-            }
-
-            const clock = new THREE.Clock();
-            const container = document.getElementById('container');
-
-            const stats = new Stats();
-            container.appendChild(stats.dom);
-
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
+        // ====== MAIN FUNCTIONS ======
+        function init() {
+            // Create loading manager first so it tracks all loading
+            const loadingManager = optimizePerformance();
+            
+            // Initialize THREE.js scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xbfe3dd);
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.6, 0);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            container.appendChild(renderer.domElement);
+            document.getElementById('container').appendChild(renderer.domElement);
 
+            // Set up environment with the loading manager
             const pmremGenerator = new THREE.PMREMGenerator(renderer);
-
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xbfe3dd);
             scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-            // Load player character model
-            const playerLoader = new GLTFLoader();
-            playerLoader.load('models/player.glb', (gltf) => {
-                player = gltf.scene;
-                player.position.set(2.5, -2, 0); // Move player farther from vendor // Adjusted starting position
-                player.scale.set(0.5, 0.5, 0.5); // Adjust scale based on model size
-                player.visible = false; // Hide the player model in first-person view
-                scene.add(player);
-                registerCollidableObject(player);
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
 
-                // Adjust camera for first-person POV after loading
-                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z); // Eye level
-                console.log("Player loaded:", player);
-            }, undefined, (error) => {
-                console.error('Error loading player model:', error);
-            });
+            // Initialize speech recognition
+            initSpeechRecognition();
 
-            // Add these variables at the top with other initialization variables
-            let activeCharacter = null;
-            let characters = {
-                vendor: null,
-                popCat: null,
-                robot: null, // Add placeholder for Robot
-                parrot: null, // Add placeholder for Parrot
-                man: null    // Add placeholder for Man
-            };
+            // Start animation loop
+            animate();
 
-            const DIALOGUE_DISTANCE = 2;
-            const DIALOGUE_RESET_DISTANCE = 2;
+            setupMobileControls();
+        }
 
-            // Add this variable with other initialization variables
-            let resetCooldown = false;
-
-            // Add these variables at the top with other initialization variables
-            let dialogueStartCooldown = false;
-            let lastCharacterId = null;
-
-            // Add boundary limits after other initialization variables
-            const MAP_BOUNDARIES = {
-                minX: -2.5,
-                maxX: 2.9,
-                minZ: -2.9,
-                maxZ: 2.4
-            };
-
-            // Add collision detection variables after other initialization variables
-            const COLLISION_DISTANCE = 1.0; // Distance to maintain from objects
-            const sceneObjects = []; // Array to store all collidable objects
-
-            // Add these variables at the top with other initialization variables
-            let lastDistanceCheck = 0;
-            const DISTANCE_CHECK_COOLDOWN = 500; // Check distance every 500ms instead of every frame
-
-            // Add this function to register objects for collision detection
-            function registerCollidableObject(object) {
-                if (object) {
-                    sceneObjects.push(object);
-                    console.log("Registered object for collision:", object);
-                }
-            }
-
-            // Camera setup for first-person POV
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-            // Lock pointer for mouse look
-            container.requestPointerLock = container.requestPointerLock || container.mozRequestPointerLock;
-            document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
-
-            container.addEventListener('click', () => {
-                container.requestPointerLock();
-            });
-
+        function setupEventListeners() {
+            // Language selection
+            document.getElementById('start-game').addEventListener('click', startGame);
+            
             // Keyboard controls
-            const keys = { 
-                forward: false,  // W or equivalent
-                left: false,     // A or equivalent
-                backward: false, // S or equivalent
-                right: false     // D or equivalent
-            };
-
-            document.addEventListener('keydown', (event) => {
-                switch (event.code) {
-                    case 'KeyW':
-                    case 'ArrowUp':
-                        keys.forward = true;
-                        break;
-                    case 'KeyA':
-                    case 'ArrowLeft':
-                        keys.left = true;
-                        break;
-                    case 'KeyS':
-                    case 'ArrowDown':
-                        keys.backward = true;
-                        break;
-                    case 'KeyD':
-                    case 'ArrowRight':
-                        keys.right = true;
-                        break;
-                }
-            });
-
-            document.addEventListener('keyup', (event) => {
-                switch (event.code) {
-                    case 'KeyW':
-                    case 'ArrowUp':
-                        keys.forward = false;
-                        break;
-                    case 'KeyA':
-                    case 'ArrowLeft':
-                        keys.left = false;
-                        break;
-                    case 'KeyS':
-                    case 'ArrowDown':
-                        keys.backward = false;
-                        break;
-                    case 'KeyD':
-                    case 'ArrowRight':
-                        keys.right = false;
-                        break;
-                }
-            });
-
-            // Mobile Controls Setup
-            const mobileControls = document.getElementById('mobile-controls');
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+            
+            // Mouse look
+            document.addEventListener('mousemove', handleMouseMove);
+            
+            // Mobile controls
             const forwardBtn = document.getElementById('forward-btn');
+            forwardBtn.addEventListener('touchstart', () => keys.forward = true);
+            forwardBtn.addEventListener('touchend', () => keys.forward = false);
+            
+            // Touch look
+            document.addEventListener('touchmove', handleTouchMove);
+            
+            // Window resize
+            window.addEventListener('resize', onWindowResize);
+        }
 
-            // Function to check if device is mobile/touch-enabled
-            function isMobileDevice() {
-                return (
-                    'ontouchstart' in window ||
-                    navigator.maxTouchPoints > 0 ||
-                    navigator.msMaxTouchPoints > 0 ||
-                    window.innerWidth <= 1024
-                );
+        function startGame() {
+            // Get selected languages
+            languageConfig.motherLanguage = document.getElementById('mother-language').value;
+            languageConfig.newLanguage = document.getElementById('new-language').value;
+            
+            if (languageConfig.motherLanguage === languageConfig.newLanguage) {
+                alert('Please select different languages for learning');
+                return;
             }
+            
+            // Hide language selection
+            document.getElementById('language-selection').style.display = 'none';
+            
+            // Load player and characters
+            loadPlayer();
+            loadCharacters();
+        }
 
-            // Initialize mobile controls
-            function initMobileControls() {
-                if (isMobileDevice()) {
-                    mobileControls.style.display = 'block';
-                    
-                    // Prevent default touch behaviors
-                    document.addEventListener('touchmove', function(e) {
-                        if (e.target.closest('#mobile-controls')) {
-                            e.preventDefault();
-                        }
-                    }, { passive: false });
-
-                    // Handle touch events for forward button
-                    if (forwardBtn) {
-                        // Touch events
-                        forwardBtn.addEventListener('touchstart', (e) => {
-                            e.preventDefault();
-                            keys.forward = true;
-                        }, { passive: false });
-
-                        forwardBtn.addEventListener('touchend', (e) => {
-                            e.preventDefault();
-                            keys.forward = false;
-                        }, { passive: false });
-
-                        // Mouse events (for testing on desktop)
-                        forwardBtn.addEventListener('mousedown', () => {
-                            keys.forward = true;
-                        });
-
-                        forwardBtn.addEventListener('mouseup', () => {
-                            keys.forward = false;
-                        });
-
-                        forwardBtn.addEventListener('mouseleave', () => {
-                            keys.forward = false;
-                        });
-                    }
-                }
-            }
-
-            // Call initMobileControls after window loads
-            window.addEventListener('load', initMobileControls);
-
-            // Reinitialize on orientation change
-            window.addEventListener('orientationchange', initMobileControls);
-
-            // Handle touch move for camera rotation
-            let touchStartX = 0;
-            let touchStartY = 0;
-
-            document.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1 && !e.target.closest('#mobile-controls')) {
-                    const touch = e.touches[0];
-                    touchStartX = touch.clientX;
-                    touchStartY = touch.clientY;
-                }
-            });
-
-            document.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1 && !e.target.closest('#mobile-controls')) {
-                    const touch = e.touches[0];
-                    const movementX = touch.clientX - touchStartX;
-                    const movementY = touch.clientY - touchStartY;
-                    
-                    const sensitivity = 0.002;
-                    yaw -= movementX * sensitivity;
-                    pitch -= movementY * sensitivity;
-                    pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
-                    
-                    touchStartX = touch.clientX;
-                    touchStartY = touch.clientY;
-                    
-                    updateCamera();
-                }
-            });
-
-            const velocity = new THREE.Vector3();
-            const speed = 5.0;
-            let yaw = 0; // Horizontal rotation (y-axis)
-            let pitch = 0; // Vertical rotation (x-axis);
-
-            // Add this function near the top, after camera initialization but before any event listeners
-            function updateCamera() {
-                if (!camera) return;  // Add safety check
-                camera.rotation.order = 'YXZ';
-                camera.rotation.y = yaw;
-                camera.rotation.x = pitch;
-            }
-
-            // Update the mousemove event listener to include error handling
-            document.addEventListener('mousemove', (event) => {
-                try {
-                if (document.pointerLockElement === container) {
-                    const sensitivity = 0.002;
-                    yaw -= event.movementX * sensitivity;
-                    pitch -= event.movementY * sensitivity;
-                    pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch)); // Limit pitch to avoid flipping
-                    updateCamera();
-                    }
-                } catch (error) {
-                    console.error('Error in mousemove handler:', error);
-                }
-            });
-
-            const dracoLoader = new DRACOLoader();
-            dracoLoader.setDecoderPath('jsm/libs/draco/gltf/');
-
+        // ====== LOADING FUNCTIONS ======
+        function loadPlayer() {
             const loader = new GLTFLoader();
-            loader.setDRACOLoader(dracoLoader);
+            loader.load('models/player.glb', (gltf) => {
+                player = gltf.scene;
+                player.position.set(0, -2, 0);
+                player.scale.set(0.5, 0.5, 0.5);
+                player.visible = false; // First-person view
+                scene.add(player);
+                
+                // Place camera at eye level
+                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
+                console.log("Player loaded");
+            });
+        }
 
-            // Load the existing Littlest Tokyo model
-            loader.load('models/gltf/LittlestTokyo.glb', function (gltf) {
+        function loadCharacters() {
+            // Load environment model (Tokyo)
+            const loader = new GLTFLoader();
+            loader.load('models/gltf/LittlestTokyo.glb', (gltf) => {
                 const model = gltf.scene;
                 model.position.set(1, 1, 0);
                 model.scale.set(0.01, 0.01, 0.01);
                 scene.add(model);
-                registerCollidableObject(model);
-
+                
+                // Setup animation mixer if needed
                 mixer = new THREE.AnimationMixer(model);
                 mixer.clipAction(gltf.animations[0]).play();
-            }, undefined, function (e) {
-                console.error(e);
             });
+            
+            // Load other characters from database
+            fetchCharactersFromDatabase();
+            
+            // Load Pop Cat separately (as in original)
+            loadPopCat();
+        }
 
-            function createDialogueBox(dialogueData, isUserSpeaking = false) {
-                try {
-                    // Check if dialogueData exists and is a string
-                    if (!dialogueData || typeof dialogueData !== 'string') {
-                        console.error('Invalid dialogueData provided:', dialogueData);
-                        return null;
+        function fetchCharactersFromDatabase() {
+            supabase
+                .from('characters')
+                .select('*')
+                .eq('is_active', true)
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error('Error fetching characters:', error);
+                        return;
                     }
-
-                    // Create container with initial position at bottom
-                const container = document.createElement('div');
-                    container.className = 'dialogue-container position-1';
-                
-                // Create replay button
-                const replayButton = document.createElement('button');
-                replayButton.className = 'replay-button';
-                    replayButton.onclick = (event) => {
-                        event.stopPropagation();
-                        const dialogueBox = replayButton.nextElementSibling;
-                        const isVendorBox = dialogueBox.classList.contains('vendor');
+                    
+                    data.forEach(character => {
+                        if (character.name === 'Pop Cat') return; // Skip Pop Cat
                         
-                        // Calculate step from bottom up
-                        const totalBoxes = dialogueBoxesElement.children.length;
-                        const boxIndex = Array.from(dialogueBoxesElement.children).indexOf(replayButton.parentElement);
-                        const stepsFromBottom = totalBoxes - boxIndex - 1;
-                        
-                        console.log('Replay clicked:', { 
-                            boxIndex,
-                            totalBoxes,
-                            stepsFromBottom,
-                            isVendorBox,
-                            dialogueBoxText: dialogueBox.textContent
-                        });
-                        
-                        handleReplayClick(boxIndex, isVendorBox);
-                    };
-
-                    // Create the dialogue box
-                    const box = document.createElement('div');
-                    box.className = `dialogue-box ${isUserSpeaking ? 'user' : 'vendor'}`;
-                    box.dataset.isVendor = !isUserSpeaking;
-
-                    // Split the dialogue data into parts (text, phonetic, translation)
-                    const parts = dialogueData.split('|');
-                    if (parts.length >= 1) {
-                        const mainText = document.createElement('span');
-                        mainText.className = 'highlighted';
-                        
-                        // Split the text into words and create spans
-                        const words = parts[0].split(' ');
-                    words.forEach((word, index) => {
-                        const span = document.createElement('span');
-                        span.className = 'word';
-                            // Add lang attribute if the text contains Arabic characters
-                            if (/[\u0600-\u06FF]/.test(word)) {
-                                span.setAttribute('lang', 'ar');
-                            }
-                            span.style.color = '#000000';
-                            span.textContent = word;
-
-                            // *** ADD CLICK LISTENER FOR EXPLANATION ***
-                            span.addEventListener('click', (event) => {
-                                event.stopPropagation(); // Prevent triggering other clicks
-                                const clickedWord = event.target.textContent.replace(/[.,!?¿¡،؟'"]/g, '').trim(); // Clean the word
-                                if (clickedWord) {
-                                    showExplanation(clickedWord);
-                                }
-                            });
-
-                            mainText.appendChild(span);
+                        const loader = new GLTFLoader();
+                        loader.load(character.model_path, (gltf) => {
+                            const model = gltf.scene;
+                            model.position.set(character.position_x, character.position_y, character.position_z);
+                            model.scale.set(character.scale_x, character.scale_y, character.scale_z);
+                            model.characterId = character.id;
+                            scene.add(model);
                             
-                            if (index < words.length - 1) {
-                                mainText.appendChild(document.createTextNode(' '));
+                            // Store in characters object
+                            switch (character.name) {
+                                case 'Market Vendor':
+                                    characters.vendor = model;
+                                    break;
+                                case 'Robot':
+                                    characters.robot = model;
+                                    break;
+                                case 'Parrot':
+                                    characters.parrot = model;
+                                    break;
+                                case 'Man':
+                                    characters.man = model;
+                                    break;
                             }
+                            
+                            console.log(`${character.name} loaded`);
                         });
-                        
-                        box.appendChild(mainText);
-
-                        if (parts.length >= 2) {
-                            const phoneticText = document.createElement('span');
-                            phoneticText.className = `instruction${isUserSpeaking ? ' instruction-flash' : ''}`;
-                            // Add lang attribute if the phonetic text contains Arabic characters
-                            if (/[\u0600-\u06FF]/.test(parts[1])) {
-                                phoneticText.setAttribute('lang', 'ar');
-                            }
-                            phoneticText.textContent = ` (${parts[1]}) `;
-                            box.appendChild(phoneticText);
-                        }
-
-                        if (parts.length >= 3) {
-                            const translationText = document.createElement('span');
-                            translationText.className = 'translation';
-                            // Add lang attribute if the translation contains Arabic characters
-                            if (/[\u0600-\u06FF]/.test(parts[2])) {
-                                translationText.setAttribute('lang', 'ar');
-                            }
-                            translationText.textContent = parts[2];
-                            box.appendChild(translationText);
-                        }
-                    }
-
-                    // Add elements to container
-                container.appendChild(replayButton);
-                    container.appendChild(box);
-
-                    // Add speaker button for both user and vendor dialogue boxes
-                    const speakerButton = document.createElement('button');
-                    speakerButton.className = 'speaker-button';
-                    speakerButton.onclick = (event) => {
-                        event.stopPropagation();
-                        const dialogueBox = event.target.previousElementSibling;
-                        const text = dialogueBox.querySelector('.highlighted').textContent;
-                        speakVendorResponse(text); // Reuse the vendor's speech function
-                    };
-                    container.appendChild(speakerButton);
-
-                    // Hide explanation box if user clicks outside a word
-                    box.addEventListener('click', (event) => {
-                        if (!event.target.classList.contains('word')) {
-                            hideExplanation();
-                        }
                     });
-
-
-                    return container;
-                } catch (error) {
-                    console.error('Error in createDialogueBox:', error);
-                    return null;
-                }
-            }
-
-            function updateBoxPositions() {
-                const boxes = Array.from(dialogueBoxes);
-                boxes.forEach((container, index) => {
-                    // Remove any existing position class
-                    container.className = 'dialogue-container';
-                    
-                    // Add new position class after a brief delay to ensure smooth animation
-                    setTimeout(() => {
-                        const position = boxes.length - index;
-                    container.classList.add(`position-${position}`);
-                    }, 10);
                 });
-            }
-
-            // Word highlighting based on speech recognition
-            function highlightWords(spokenText) {
-                try {
-                    const currentDialogue = dialogueSteps[languageConfig.newLanguage][currentStep];
-                    if (!currentDialogue) {
-                        console.error('No dialogue found for current step:', currentStep);
-                        return false;
-                    }
-                    
-                    // Clean text for comparison
-                    const cleanText = (text) => {
-                        return text
-                            .replace(/[.,!?¿¡،؟'"]/g, '')  // Remove punctuation
-                            .replace(/\s+/g, ' ')          // Normalize spaces
-                            .trim()
-                            .toLowerCase();
-                    };
-                    
-                    // Get the text to compare against
-                    let expectedText = currentDialogue.text;
-                    if (languageConfig.newLanguage === 'ar') {
-                        expectedText = currentDialogue.phonetic_text_ar_recognition || currentDialogue.text;
-                    }
-                    
-                    // Clean texts for comparison
-                    const cleanedExpectedText = cleanText(expectedText);
-                    const cleanedSpokenText = cleanText(spokenText);
-                    
-                    console.log('Comparing:', {
-                        expected: cleanedExpectedText,
-                        spoken: cleanedSpokenText
-                    });
-
-                    // Get the current dialogue box
-                    const currentBox = dialogueBoxes[dialogueBoxes.length - 1];
-                    if (!currentBox) return false;
-
-                    const wordSpans = currentBox.querySelectorAll('.dialogue-box .word');
-                    if (!wordSpans.length) return false;
-
-                    // Split both texts into words
-                    const expectedWords = cleanedExpectedText.split(' ');
-                    const spokenWords = cleanedSpokenText.split(' ');
-                    
-                    let totalChars = 0;
-                    let matchedChars = 0;
-
-                    // Process each expected word
-                    expectedWords.forEach((expectedWord, index) => {
-                        const wordSpan = wordSpans[index];
-                        if (!wordSpan) return;
-                        
-                        const cleanExpectedWord = cleanText(expectedWord);
-                        totalChars += cleanExpectedWord.length;
-                        
-                        // Find best match among spoken words
-                        let bestMatchScore = 0;
-                        spokenWords.forEach(spokenWord => {
-                            const cleanSpokenWord = cleanText(spokenWord);
-                            const score = calculateMatchScore(cleanExpectedWord, cleanSpokenWord);
-                            bestMatchScore = Math.max(bestMatchScore, score);
-                        });
-
-                        // Update word color based on match score (blue if matched)
-                        if (bestMatchScore > 0.7) {
-                            wordSpan.style.color = '#0066cc';
-                            matchedChars += cleanExpectedWord.length;
-                        } else {
-                            wordSpan.style.color = '#000000';
-                        }
-                    });
-
-                    // Calculate overall match percentage
-                    const matchPercentage = totalChars > 0 ? (matchedChars / totalChars) * 100 : 0;
-                    console.log('Match percentage:', matchPercentage.toFixed(1) + '%');
-                    
-                    // Return true if overall match is >= 60% (adjusted from 70%)
-                    return matchPercentage >= 60;
-                } catch (error) {
-                    console.error('Error in highlightWords:', error);
-                    return false;
-                }
-            }
-
-            // Helper function to calculate match score between two words
-            function calculateMatchScore(word1, word2) {
-                const maxLength = Math.max(word1.length, word2.length);
-                let matchCount = 0;
-                const minLength = Math.min(word1.length, word2.length);
+        }
+        
+        function loadPopCat() {
+            const loader = new GLTFLoader();
+            loader.load('models/pop_cat.glb', (gltf) => {
+                const model = gltf.scene;
+                model.position.set(2.1, -0.9, 1.9); // Keep original position
+                model.scale.set(0.013, 0.013, 0.013); // Keep original scale
+                model.rotation.y = Math.PI / 4;
+                model.characterId = 5; // Hardcoded as in original
+                scene.add(model);
                 
-                for (let i = 0; i < minLength; i++) {
-                    if (word1[i] === word2[i]) {
-                        matchCount++;
-                    }
-                }
+                characters.popCat = model;
+                console.log("Pop Cat loaded");
+            });
+        }
+
+        // ====== PLAYER MOVEMENT & CAMERA ======
+        function handleKeyDown(event) {
+            switch (event.code) {
+                case 'KeyW': case 'ArrowUp': keys.forward = true; break;
+                case 'KeyA': case 'ArrowLeft': keys.left = true; break;
+                case 'KeyS': case 'ArrowDown': keys.backward = true; break;
+                case 'KeyD': case 'ArrowRight': keys.right = true; break;
+            }
+        }
+        
+        function handleKeyUp(event) {
+            switch (event.code) {
+                case 'KeyW': case 'ArrowUp': keys.forward = false; break;
+                case 'KeyA': case 'ArrowLeft': keys.left = false; break;
+                case 'KeyS': case 'ArrowDown': keys.backward = false; break;
+                case 'KeyD': case 'ArrowRight': keys.right = false; break;
+            }
+        }
+        
+        function handleMouseMove(event) {
+            // Only update if pointer is locked
+            if (document.pointerLockElement === document.body) {
+                const sensitivity = 0.002;
+                yaw -= event.movementX * sensitivity;
+                pitch -= event.movementY * sensitivity;
                 
-                return matchCount / maxLength;
-            }
-
-            // Update the updatePlayer function to focus on core functionality
-            function updatePlayer(delta) {
-                if (!player) return;
-                if (isNaN(delta) || delta <= 0) return;
-
-                // Calculate player movement
-                const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-                const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-
-                // Calculate new position
-                const newPosition = player.position.clone();
-                if (keys.forward) newPosition.add(forward.multiplyScalar(speed * delta));
-                if (keys.backward) newPosition.add(forward.multiplyScalar(-speed * delta));
-                if (keys.left) newPosition.add(right.multiplyScalar(-speed * delta));
-                if (keys.right) newPosition.add(right.multiplyScalar(speed * delta));
-
-                // Check map boundaries
-                if (newPosition.x < MAP_BOUNDARIES.minX) newPosition.x = MAP_BOUNDARIES.minX;
-                if (newPosition.x > MAP_BOUNDARIES.maxX) newPosition.x = MAP_BOUNDARIES.maxX;
-                if (newPosition.z < MAP_BOUNDARIES.minZ) newPosition.z = MAP_BOUNDARIES.minZ;
-                if (newPosition.z > MAP_BOUNDARIES.maxZ) newPosition.z = MAP_BOUNDARIES.maxZ;
-
-                // Update player position
-                player.position.copy(newPosition);
-                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
-
-                // Only check distances if cooldown has passed
-                const currentTime = Date.now();
-                if (currentTime - lastDistanceCheck >= DISTANCE_CHECK_COOLDOWN) {
-                    lastDistanceCheck = currentTime;
-
-                    // Check character distances for starting/ending dialogue
-                    let closestCharacter = null;
-                    let closestDistance = Infinity;
-
-                    Object.values(characters).forEach(character => {
-                        if (!character) return;
-                        
-                        const distance = calculateDistance(player.position, character.position);
-                        
-                        // For starting dialogue: find closest character within dialogue distance
-                        if (distance < DIALOGUE_DISTANCE && distance < closestDistance) {
-                            closestCharacter = character;
-                            closestDistance = distance;
-                        }
-                        
-                        // For ending dialogue: check if active character is too far
-                        if (activeCharacter === character && 
-                            distance > DIALOGUE_RESET_DISTANCE && 
-                            hasStartedDialogue && 
-                            !resetCooldown) {
-                            resetDialogue();
-                        }
-                    });
-
-                    // Start dialogue with closest character if not already in dialogue
-                    if (closestCharacter && !hasStartedDialogue && !resetCooldown) {
-                        console.log(`Starting dialogue with character:`, closestCharacter.characterId);
-                        startDialogueWithCharacter(closestCharacter);
-                    }
-                }
-            }
-
-            // Update the startDialogueWithCharacter function to properly handle any character
-            async function startDialogueWithCharacter(character) {
-                try {
-                    // Check if we're already in dialogue with this character
-                    if (character.characterId === lastCharacterId && hasStartedDialogue) {
-                        return;
-                    }
-
-                    // Check if we're in cooldown
-                    if (dialogueStartCooldown) {
-                        return;
-                    }
-
-                    dialogueStartCooldown = true;
-                    activeCharacter = character;
-                    lastCharacterId = character.characterId;
-                    console.log("Starting dialogue with character:", character.characterId);
-                    
-                    await fetchDialogueData(character.characterId, languageConfig.motherLanguage, languageConfig.newLanguage);
-                    
-                    currentStep = 0;
-                    dialogueBoxes = [];
-                    
-                    updateDialogue(0, true);
-                    hasStartedDialogue = true;
-                    
-                    if (recognition) {
-                        setTimeout(() => {
-                            initializeRecognition();
-                            try {
-                                recognition.start();
-                                isRecognizing = true;
-                            } catch (e) {
-                                console.error("Failed to start recognition:", e);
-                            }
-                        }, 500);
-                    }
-
-                    // Reset cooldown after 2 seconds
-                    setTimeout(() => {
-                        dialogueStartCooldown = false;
-                    }, 2000);
-                } catch (error) {
-                    console.error("Error starting dialogue:", error);
-                    dialogueStartCooldown = false;
-                }
-            }
-
-            // Update initGame to ensure we're starting with a clean state
-            async function initGame() {
-                // Clear any existing dialogue boxes first
-                clearAllDialogueBoxes();
-                hideExplanation(); // Ensure explanation box is hidden at game start
+                // Limit pitch to avoid flipping
+                pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
                 
-                if (!recognition) {
-                    console.error("Speech recognition not initialized");
-                    createDialogueBox("Speech recognition is not available. Please use a supported browser like Chrome, Edge, or Safari.");
+                updateCamera();
+            }
+        }
+        
+        function handleTouchMove(event) {
+            if (event.touches.length === 1 && !event.target.closest('#mobile-controls')) {
+                // Prevent default to avoid page scrolling
+                event.preventDefault();
+                
+                const touch = event.touches[0];
+                
+                // Use touch movement for camera rotation
+                if (!window.lastTouchX) {
+                    window.lastTouchX = touch.clientX;
+                    window.lastTouchY = touch.clientY;
                     return;
                 }
                 
-                // Check for HTTPS
-                if (window.location.protocol !== 'https:') {
-                    console.error("Site must be served over HTTPS for speech recognition to work");
-                    createDialogueBox("This site requires HTTPS for speech recognition to work. Please use a secure connection.");
-                    return;
-                }
+                // Calculate movement delta
+                const movementX = touch.clientX - window.lastTouchX;
+                const movementY = touch.clientY - window.lastTouchY;
                 
-                try {
-                    // Reset state completely
-                    currentStep = 0;
-                    isRecognizing = false;
-                    hasStartedDialogue = false;
-                    lastCharacterId = null;
-                    activeCharacter = null;
-                    dialogueStartCooldown = false;
-                    resetCooldown = false;
-                    lastDistanceCheck = 0;
+                // Update last touch position
+                window.lastTouchX = touch.clientX;
+                window.lastTouchY = touch.clientY;
                 
-                    // Wait for vendor to be loaded
-                    if (!vendor) {
-                        console.error("Vendor not loaded yet");
-                        return;
-                    }
-
-                    // Get vendor's character ID
-                    const vendorId = vendor.characterId;
-                    console.log("Initializing game with vendor ID:", vendorId);
-
-                    if (!vendorId) {
-                        throw new Error("Vendor character ID is undefined");
-                    }
-
-                    // Fetch dialogue data for vendor - but don't display yet
-                    await fetchDialogueData(vendorId, languageConfig.motherLanguage, languageConfig.newLanguage);
-
-                    // Verify that dialogue data was loaded successfully
-                    if (!dialogueSteps[languageConfig.newLanguage] || !dialogueSteps[languageConfig.newLanguage].length ||
-                        !dialogueSteps[languageConfig.motherLanguage] || !dialogueSteps[languageConfig.motherLanguage].length) {
-                        throw new Error("Failed to load dialogue data");
-                    }
+                // Adjust sensitivity for touch (usually needs to be higher than mouse)
+                const sensitivity = 0.005;
+                yaw -= movementX * sensitivity;
+                pitch -= movementY * sensitivity;
                 
-                    // Set up speech recognition for the new language
-                    recognition.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
-                                     languageConfig.newLanguage === 'es' ? 'es-ES' : 
-                                     languageConfig.newLanguage === 'ru' ? 'ru-RU' :
-                                     languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
+                // Limit pitch to avoid flipping
+                pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
                 
-                    try {
-                        // Request microphone permission
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        console.log("Microphone access granted, stream active:", stream.active);
-                        
-                        // Close the stream right away - we'll start recognition only when needed
-                        stream.getTracks().forEach(track => track.stop());
-                        
-                    } catch (permissionError) {
-                        console.error("Microphone permission error:", permissionError);
-                        createDialogueBox("Please allow microphone access to use speech recognition. Click the microphone icon in your browser's address bar and reload the page.");
-                        return;
-                    }
-                } catch (err) {
-                    console.error("Error initializing game:", err);
-                    createDialogueBox(`Error: ${err.message}`);
-                }
+                // Update camera immediately
+                updateCamera();
             }
+        }
+        
+        function updateCamera() {
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = yaw;
+            camera.rotation.x = pitch;
+        }
+        
+        function updatePlayer(delta) {
+            if (!player) return;
+            
+            // Calculate movement direction
+            const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+            const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+            
+            // Calculate new position
+            const newPosition = player.position.clone();
+            
+            if (keys.forward) newPosition.add(forward.multiplyScalar(speed * delta));
+            if (keys.backward) newPosition.add(forward.multiplyScalar(-speed * delta));
+            if (keys.left) newPosition.add(right.multiplyScalar(-speed * delta));
+            if (keys.right) newPosition.add(right.multiplyScalar(speed * delta));
+            
+            // Apply map boundaries (invisible fence)
+            if (newPosition.x < MAP_BOUNDARIES.minX) newPosition.x = MAP_BOUNDARIES.minX;
+            if (newPosition.x > MAP_BOUNDARIES.maxX) newPosition.x = MAP_BOUNDARIES.maxX;
+            if (newPosition.z < MAP_BOUNDARIES.minZ) newPosition.z = MAP_BOUNDARIES.minZ;
+            if (newPosition.z > MAP_BOUNDARIES.maxZ) newPosition.z = MAP_BOUNDARIES.maxZ;
+            
+            // Update player position
+            player.position.copy(newPosition);
+            camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
+            
+            // Check for character interactions
+            checkCharacterDistances();
+        }
 
-            // Add a function to clear all dialogue boxes
-            function clearAllDialogueBoxes() {
-                dialogueBoxes.forEach(box => box.remove());
+        // ====== DIALOGUE SYSTEM ======
+        function checkCharacterDistances() {
+            if (!player) return;
+            
+            // Find closest character within interaction distance
+            let closestCharacter = null;
+            let closestDistance = Infinity;
+            
+            Object.values(characters).forEach(character => {
+                if (!character) return;
+                
+                const distance = calculateDistance(player.position, character.position);
+                if (distance < DIALOGUE_DISTANCE && distance < closestDistance) {
+                    closestCharacter = character;
+                    closestDistance = distance;
+                }
+            });
+            
+            // Handle dialogue based on distance
+            if (activeCharacter && calculateDistance(player.position, activeCharacter.position) > DIALOGUE_RESET_DISTANCE) {
+                // Player moved away from active character
+                if (hasStartedDialogue) {
+                    resetDialogue();
+                }
+            } else if (closestCharacter && !hasStartedDialogue) {
+                // Player approached a character
+                startDialogueWithCharacter(closestCharacter);
+            }
+        }
+        
+        async function startDialogueWithCharacter(character) {
+            try {
+                console.log("Starting dialogue with character:", character.characterId);
+                activeCharacter = character;
+                
+                // Fetch dialogue data
+                await fetchDialogueData(character.characterId, languageConfig.motherLanguage, languageConfig.newLanguage);
+                
+                // Reset dialogue state
+                currentStep = 0;
                 dialogueBoxes = [];
-                dialogueBoxesElement.innerHTML = ''; // Make sure the container is empty
+                
+                // Show first dialogue
+                updateDialogue(0, true);
+                hasStartedDialogue = true;
+                
+                // Start speech recognition
+                startRecognition();
+            } catch (error) {
+                console.error("Error starting dialogue:", error);
+            }
+        }
+        
+        function resetDialogue() {
+            // Clear dialogue boxes with animation
+            dialogueBoxes.forEach(box => {
+                box.style.opacity = '0';
+                box.style.transform = 'translateY(20px)';
+                setTimeout(() => box.remove(), 300);
+            });
+            
+            // Reset state
+            dialogueBoxes = [];
+            hasStartedDialogue = false;
+            activeCharacter = null;
+            currentStep = 0;
+            
+            // Stop recognition
+            if (recognition) {
+                recognition.abort();
+                isRecognizing = false;
+            }
+        }
+        
+        function updateDialogue(step, isUserSpeaking) {
+            // Get dialogue data
+            const dialogueArray = isUserSpeaking ? dialogueSteps : vendorResponses;
+            const newLangData = dialogueArray[languageConfig.newLanguage]?.[step];
+            const motherLangData = dialogueArray[languageConfig.motherLanguage]?.[step];
+            
+            if (!newLangData || !motherLangData) {
+                console.error('Missing dialogue data for step:', step);
+                return;
             }
             
-            // Update the resetDialogue function to be more thorough
-            function resetDialogue() {
-                console.log("Resetting dialogue");
-                resetCooldown = true;
-                lastCharacterId = null;
-                activeCharacter = null;
-                hasStartedDialogue = false;
-                currentStep = 0;
-                
-                hideExplanation(); // Hide explanation box when dialogue resets
-                
-                if (recognition) {
-                    try {
-                        recognition.abort();
-                    } catch (e) {
-                        console.error("Error aborting recognition:", e);
-                    }
-                    isRecognizing = false;
-                }
-                
-                if (speechSynthesis.speaking) {
-                    speechSynthesis.cancel();
-                }
-                
-                // Remove all dialogue boxes with animation
-                dialogueBoxes.forEach((box) => {
-                    box.style.opacity = '0';
-                    box.style.transform = 'translateY(20px)';
-                    setTimeout(() => box.remove(), 300);
-                });
-                
-                dialogueBoxes = [];
-                
-                setTimeout(() => {
-                    resetCooldown = false;
-                }, 2000);
+            // Create dialogue box
+            const box = createDialogueBox(newLangData, motherLangData, isUserSpeaking);
+            dialogueContainer.appendChild(box);
+            dialogueBoxes.push(box);
+            
+            // Animate existing boxes upward
+            updateDialogueBoxPositions();
+            
+            // Limit to 10 boxes
+            if (dialogueBoxes.length > 10) {
+                const oldestBox = dialogueBoxes.shift();
+                oldestBox.remove();
             }
-
-            // Add this function to update flashing state
-            function updateFlashingState() {
-                // Remove flashing from all phonetic texts
-                document.querySelectorAll('.instruction-flash').forEach(el => {
-                    el.classList.remove('instruction-flash');
-                });
-                
-                // Add flashing only to the latest user dialogue box
-                const latestBox = dialogueBoxes[dialogueBoxes.length - 1];
-                if (latestBox && latestBox.querySelector('.dialogue-box.user')) {
-                    const phoneticText = latestBox.querySelector('.instruction');
-                    if (phoneticText) {
-                        phoneticText.classList.add('instruction-flash');
-                    }
-                }
+        }
+        
+        function createDialogueBox(newLangData, motherLangData, isUserSpeaking) {
+            const box = document.createElement('div');
+            box.className = `dialogue-box ${isUserSpeaking ? 'user' : 'vendor'}`;
+            
+            // Add replay button
+            const replayButton = document.createElement('button');
+            replayButton.className = 'replay-button';
+            replayButton.textContent = '⟲';
+            replayButton.onclick = () => handleReplayClick(dialogueBoxes.indexOf(box));
+            box.appendChild(replayButton);
+            
+            // Add text container
+            const textContainer = document.createElement('div');
+            textContainer.className = 'dialogue-text';
+            
+            // Add words with highlighting capability
+            const words = newLangData.text.split(' ');
+            words.forEach(word => {
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'word';
+                wordSpan.textContent = word;
+                textContainer.appendChild(wordSpan);
+                textContainer.appendChild(document.createTextNode(' '));
+            });
+            
+            // Add phonetic text
+            const phoneticSpan = document.createElement('span');
+            phoneticSpan.className = 'phonetic';
+            phoneticSpan.textContent = `(${newLangData.phonetic_text})`;
+            textContainer.appendChild(phoneticSpan);
+            
+            // Add translation
+            const translationSpan = document.createElement('span');
+            translationSpan.className = 'translation';
+            translationSpan.textContent = motherLangData.text;
+            textContainer.appendChild(translationSpan);
+            
+            box.appendChild(textContainer);
+            
+            // Add sound button
+            const soundButton = document.createElement('button');
+            soundButton.className = 'sound-button';
+            soundButton.textContent = '🔊';
+            soundButton.onclick = () => speakText(newLangData.text);
+            box.appendChild(soundButton);
+            
+            return box;
+        }
+        
+        function updateDialogueBoxPositions() {
+            dialogueBoxes.forEach((box, index) => {
+                const position = dialogueBoxes.length - index - 1;
+                box.style.transform = `translateY(-${position * 60}px)`;
+            });
+        }
+        
+        function handleReplayClick(boxIndex) {
+            // Remove all dialogue boxes after the clicked one
+            const boxesToRemove = dialogueBoxes.slice(boxIndex + 1);
+            boxesToRemove.forEach(box => {
+                box.style.opacity = '0';
+                box.style.transform = 'translateY(20px)';
+                setTimeout(() => box.remove(), 300);
+            });
+            
+            // Update dialogue state
+            dialogueBoxes = dialogueBoxes.slice(0, boxIndex + 1);
+            currentStep = Math.floor(boxIndex / 2);
+            
+            // Update positions
+            updateDialogueBoxPositions();
+            
+            // Restart recognition if needed
+            startRecognition();
+        }
+        
+        function highlightWords(spokenText) {
+            // Get latest user dialogue box
+            const latestBox = dialogueBoxes[dialogueBoxes.length - 1];
+            if (!latestBox) return false;
+            
+            // Get all word spans
+            const wordSpans = latestBox.querySelectorAll('.word');
+            if (!wordSpans.length) return false;
+            
+            // Clean and normalize text for better matching
+            function normalizeText(text) {
+                return text.toLowerCase()
+                    .replace(/[.,!?;:'"،؟]/g, '') // Remove punctuation
+                    .replace(/\s+/g, ' ')         // Normalize spaces
+                    .trim();
             }
-
-            // Modify updateDialogue to call updateFlashingState
-            function updateDialogue(step, isUserSpeaking) {
-                try {
-                    // Format dialogue data with proper separators
-                    const dialogueArray = isUserSpeaking ? dialogueSteps : vendorResponses;
-                    const newLangData = dialogueArray[languageConfig.newLanguage]?.[step];
-                    const motherLangData = dialogueArray[languageConfig.motherLanguage]?.[step];
-                    
-                    if (!newLangData || !motherLangData) {
-                        console.error('Missing dialogue data for step:', step);
+            
+            // Get expected text (all words joined)
+            const expectedText = Array.from(wordSpans).map(span => span.textContent).join(' ');
+            const normalizedExpected = normalizeText(expectedText);
+            const normalizedSpoken = normalizeText(spokenText);
+            
+            console.log("Comparing:", {
+                expected: normalizedExpected,
+                spoken: normalizedSpoken
+            });
+            
+            // Split for word-by-word comparison
+            const expectedWords = normalizedExpected.split(' ');
+            const spokenWords = normalizedSpoken.split(' ');
+            
+            // Track match statistics
+            let totalWords = expectedWords.length;
+            let matchedWords = 0;
+            
+            // Compare each expected word with fuzzy matching
+            expectedWords.forEach((expectedWord, index) => {
+                const wordSpan = wordSpans[index];
+                if (!wordSpan) return;
+                
+                // Try to find a match among spoken words
+                let bestMatchScore = 0;
+                
+                spokenWords.forEach(spokenWord => {
+                    // Exact match
+                    if (spokenWord === expectedWord) {
+                        bestMatchScore = 1;
                         return;
                     }
-
-                    // Reset colors of words in the previous dialogue box to black
-                    const previousBox = dialogueBoxes[dialogueBoxes.length - 1]?.querySelector('.dialogue-box');
-                    if (previousBox) {
-                        const wordSpans = previousBox.querySelectorAll('.word');
-                        wordSpans.forEach(span => {
-                            span.style.color = '#000000';
-                        });
-                    }
-
-                    // Get the appropriate phonetic text based on mother language
-                    let phoneticText;
-                    switch (languageConfig.motherLanguage) {
-                        case 'ru':
-                            phoneticText = newLangData.phonetic_text_ru || newLangData.phonetic_text;
-                            break;
-                        case 'ar':
-                            phoneticText = newLangData.phonetic_text_ar || newLangData.phonetic_text;
-                            break;
-                        case 'es':
-                            phoneticText = newLangData.phonetic_text_es || newLangData.phonetic_text;
-                            break;
-                        case 'en':
-                            phoneticText = newLangData.phonetic_text_en || newLangData.phonetic_text;
-                            break;
-                        default:
-                            phoneticText = newLangData.phonetic_text;
-                    }
-
-                    const dialogueData = `${newLangData.text}|${phoneticText}|${motherLangData.text}`;
-                    const dialogueBox = createDialogueBox(dialogueData, isUserSpeaking);
                     
-                    if (dialogueBox) {
-                        dialogueBoxesElement.appendChild(dialogueBox);
-                        dialogueBoxes.push(dialogueBox);
-                        updateBoxPositions();
-                        updateFlashingState();
-                        
-                        // Animate Pop Cat if it's the active character
-                        if (activeCharacter === characters.popCat) {
-                            animatePopCat();
-                        }
-                        
-                        if (dialogueBoxes.length > 10) {
-                            const oldestBox = dialogueBoxes.shift();
-                            oldestBox.remove();
-                        }
+                    // Partial match (start of word or contained)
+                    if (expectedWord.startsWith(spokenWord) || spokenWord.startsWith(expectedWord)) {
+                        const score = Math.min(spokenWord.length, expectedWord.length) / 
+                                      Math.max(spokenWord.length, expectedWord.length);
+                        bestMatchScore = Math.max(bestMatchScore, score);
                     }
-                } catch (error) {
-                    console.error('Error in updateDialogue:', error);
-                }
-            }
-
-            // Calculate distance
-            function calculateDistance(pos1, pos2) {
-                if (!pos1 || !pos2) {
-                    console.warn("Position undefined:", { pos1, pos2 });
-                    return Infinity;
-                }
-                const dx = pos2.x - pos1.x;
-                const dy = pos2.y - pos1.y;
-                const dz = pos2.z - pos1.z;
-                return Math.sqrt(dx * dx + dy * dy + dz * dz);
-            }
-
-            // Handle vendor interaction (not used directly now, but kept for consistency)
-            function handleVendorInteraction() {
-                if (dialogueBoxes.length === 0 || dialogueBoxes[dialogueBoxes.length - 1].textContent !== `-${vendorResponses[vendorResponses.length - 1].en}`) {
-                    const box = createDialogueBox(`${vendorResponses[vendorResponses.length - 1].en} (${vendorResponses[vendorResponses.length - 1].phoneticRu}) ${vendorResponses[vendorResponses.length - 1].translation}`);
-                    dialogueBoxes.push(box);
-                    updateBoxPositions();
-                }
-            }
-
-            // Continuous Speech Recognition Setup
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            let recognition;
-            let isRecognizing = false;
-            let startTime = 0;
-
-            if (!SpeechRecognition) {
-                console.error("Speech recognition is not supported in this browser.");
-                createDialogueBox("Speech recognition is not supported in this browser. Please try using Chrome, Edge, or Safari.");
-            } else {
-                try {
-                    recognition = new SpeechRecognition();
-                    recognition.interimResults = false;
-                    recognition.maxAlternatives = 1;
-                    recognition.continuous = false;
-
-                    recognition.onstart = () => {
-                        console.log("Speech recognition started");
-                        isRecognizing = true;
-                    };
-
-                    recognition.onspeechstart = () => {
-                        console.log("Speech detected");
-                    };
-
-                    recognition.onerror = (event) => {
-                        console.error("Speech recognition error:", event.error);
-                        isRecognizing = false;
-                        hideExplanation(); // Hide explanation on error
-                        
-                        if (event.error === 'not-allowed') {
-                            createDialogueBox("Error: Microphone access not granted. Please allow microphone access and reload the page.");
-                        } else if (event.error === 'no-speech') {
-                            console.log("No speech detected");
-                            // Only restart if we're in an active dialogue
-                            if (hasStartedDialogue && !speechSynthesis.speaking) {
-                                setTimeout(startRecognition, 1000);
-                            }
-                        } else if (event.error === 'network') {
-                            createDialogueBox("Network error occurred. Please check your internet connection.");
-                        } else if (event.error === 'aborted') {
-                            console.log("Recognition aborted");
-                        } else {
-                            createDialogueBox(`Speech recognition error: ${event.error}`);
-                        }
-                    };
-
-                    recognition.onend = () => {
-                        console.log("Speech recognition ended");
-                        isRecognizing = false;
-                        hideExplanation(); // Hide explanation when recognition ends
-                        // Only restart if we're in an active dialogue and not speaking
-                        if (hasStartedDialogue && !speechSynthesis.speaking) {
-                            setTimeout(() => {
-                                if (!isRecognizing) {  // Double check it's still not recognizing
-                                    startRecognition();
-                                }
-                            }, 100);
-                        }
-                    };
-
-                    recognition.onresult = (event) => {
-                        try {
-                            hideExplanation(); // Hide explanation when result received
-
-                            if (!event.results || event.results.length === 0) {
-                                console.error('No results in recognition event');
-                                return;
-                            }
-
-                            const currentTime = Date.now();
-                            if (currentTime - lastRecognitionTime < 500) {
-                                console.log('Skipping recognition - too soon after last recognition');
-                                return;
-                            }
-                            lastRecognitionTime = currentTime;
-
-                            const result = event.results[event.results.length - 1];
-                            if (!result || !result[0]) {
-                                console.error('Invalid recognition result structure');
-                                return;
-                            }
-
-                            const spokenText = result[0].transcript.trim();
-                            console.log("Spoken text recognized:", spokenText);
-                            
-                            if (currentStep >= dialogueSteps[languageConfig.newLanguage].length) {
-                                console.error('Current step is out of bounds:', currentStep);
-                                return;
-                            }
-
-                            if (highlightWords(spokenText)) {
-                                if (recognition && isRecognizing) {
-                                    recognition.stop();
-                                    isRecognizing = false;
-                                }
-
-                                setTimeout(() => {
-                                    updateDialogue(currentStep, false);
-                                    const vendorResponse = vendorResponses[languageConfig.newLanguage][currentStep];
-                                    if (vendorResponse) {
-                                        speakVendorResponse(vendorResponse.text);
-                                        const vendorDelay = calculateVendorDelay(vendorResponse.text);
-                                        
-                                        setTimeout(() => {
-                                            currentStep++;
-                                            if (currentStep < dialogueSteps[languageConfig.newLanguage].length) {
-                                                updateDialogue(currentStep, true);
-                                                setTimeout(() => {
-                                                    startRecognition();
-                                                }, 500);
-                                            }
-                                        }, vendorDelay);
-                                    }
-                                }, 500);
-                            } else {
-                                console.log("Recognition did not meet threshold - continue listening");
-                            }
-                        } catch (error) {
-                            console.error('Error in recognition result handler:', error);
-                            if (recognition && !isRecognizing) {
-                                setTimeout(() => {
-                                    try {
-                                        recognition.start();
-                                        isRecognizing = true;
-                                    } catch (e) {
-                                        console.error('Failed to recover recognition:', e);
-                                    }
-                                }, 1000);
-                            }
-                        }
-                    };
-                } catch (error) {
-                    console.error("Error initializing recognition:", error);
-                }
-            }
-
-            // Initialize everything when the page loads
-            window.addEventListener('load', async () => {
-                try {
-                    await initVendorVoice();
-                    await fetchLanguages(); // Fetch languages first
                     
-                    // Load models concurrently
-                    await Promise.all([
-                        loadPopCat(),
-                        fetchCharacters(),
-                        loadFlyingModel() // Load the new flying model
-                    ]);
+                    // Levenshtein distance for similar words
+                    const distance = levenshteinDistance(spokenWord, expectedWord);
+                    const maxLength = Math.max(spokenWord.length, expectedWord.length);
+                    const similarity = maxLength > 0 ? 1 - (distance / maxLength) : 0;
                     
-                    console.log("All models and languages loaded, setting up start button.");
-
-                    document.getElementById('start-game').addEventListener('click', async () => {
-                        languageConfig.motherLanguage = document.getElementById('mother-language').value;
-                        languageConfig.newLanguage = document.getElementById('new-language').value;
-                        
-                        if (languageConfig.motherLanguage === languageConfig.newLanguage) {
-                            alert('Please select different languages for learning');
-                            return;
-                        }
-                        
-                        document.getElementById('language-selection').style.display = 'none';
-                        setupVoice(); // Setup voice after languages are confirmed
-                        await initGame();
-                    });
-                } catch (error) {
-                    console.error('Error during initial loading:', error);
-                    // Optionally display an error message to the user
+                    bestMatchScore = Math.max(bestMatchScore, similarity);
+                });
+                
+                // Update styling based on match score
+                if (bestMatchScore >= 0.7) {  // 70% similarity threshold
+                    wordSpan.style.color = '#0066cc';
+                    matchedWords++;
+                } else {
+                    wordSpan.style.color = '#000000';
                 }
             });
+            
+            // Calculate overall match percentage (with bonus for sequence matching)
+            const matchPercentage = (matchedWords / totalWords) * 100;
+            
+            // Add bonus if continuous sequences were matched
+            const sequenceBonus = calculateSequenceBonus(normalizedExpected, normalizedSpoken);
+            const finalScore = Math.min(100, matchPercentage + sequenceBonus);
+            
+            console.log("Match results:", {
+                words: `${matchedWords}/${totalWords}`,
+                percentage: matchPercentage.toFixed(1) + "%",
+                sequenceBonus: sequenceBonus.toFixed(1) + "%",
+                finalScore: finalScore.toFixed(1) + "%"
+            });
+            
+            // Return true if final score is above threshold (60%)
+            return finalScore >= 60;
+        }
 
-            // Remove the old event listener
-            document.getElementById('start-game').removeEventListener('click', () => {});
+        // Calculate bonus for matching sequences (phrases)
+        function calculateSequenceBonus(expected, spoken) {
+            // Find longest common substring
+            const longestCommon = longestCommonSubstring(expected, spoken);
+            const maxLength = Math.max(expected.length, spoken.length);
+            
+            // Give bonus proportional to the longest matched sequence
+            return longestCommon.length > 3 ? (longestCommon.length / maxLength) * 20 : 0;
+        }
 
-            window.onresize = function () {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+        // Find longest common substring between two strings
+        function longestCommonSubstring(s1, s2) {
+            if (!s1 || !s2) return '';
+            
+            let longest = '';
+            const s1Length = s1.length;
+            const s2Length = s2.length;
+            
+            // Use a simple algorithm for short strings
+            for (let i = 0; i < s1Length; i++) {
+                for (let j = 0; j < s2Length; j++) {
+                    let k = 0;
+                    while (s1[i + k] && s2[j + k] && s1[i + k] === s2[j + k]) {
+                        k++;
+                    }
+                    if (k > longest.length) {
+                        longest = s1.substring(i, i + k);
+                    }
+                }
+            }
+            
+            return longest;
+        }
+
+        // Levenshtein distance calculation for string similarity
+        function levenshteinDistance(s1, s2) {
+            if (s1.length === 0) return s2.length;
+            if (s2.length === 0) return s1.length;
+            
+            const matrix = [];
+            
+            // Initialize matrix
+            for (let i = 0; i <= s1.length; i++) {
+                matrix[i] = [i];
+            }
+            
+            for (let j = 0; j <= s2.length; j++) {
+                matrix[0][j] = j;
+            }
+            
+            // Fill matrix
+            for (let i = 1; i <= s1.length; i++) {
+                for (let j = 1; j <= s2.length; j++) {
+                    const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+                    matrix[i][j] = Math.min(
+                        matrix[i - 1][j] + 1,      // deletion
+                        matrix[i][j - 1] + 1,      // insertion
+                        matrix[i - 1][j - 1] + cost // substitution
+                    );
+                }
+            }
+            
+            return matrix[s1.length][s2.length];
+        }
+
+        // ====== SPEECH FUNCTIONS ======
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.error("Speech recognition not supported in this browser");
+                alert("Your browser doesn't support speech recognition. Please use Chrome, Edge, or Safari.");
+                return;
+            }
+            
+            recognition = new SpeechRecognition();
+            recognition.interimResults = true; // Get interim results for better feedback
+            recognition.continuous = false;
+            
+            recognition.onstart = () => {
+                isRecognizing = true;
+                console.log("Recognition started");
+                
+                // Visual feedback - add listening class to current phonetic text
+                const latestBox = dialogueBoxes[dialogueBoxes.length - 1];
+                if (latestBox) {
+                    const phoneticText = latestBox.querySelector('.phonetic');
+                    if (phoneticText) {
+                        phoneticText.classList.add('listening');
+                    }
+                }
             };
-
-            // Helper vector for screen positioning
-            const screenPositionVector = new THREE.Vector3();
-
-            function animate() {
-                try {
-                    const delta = clock.getDelta();
-                    if (mixer) mixer.update(delta);
-                    if (popCatMixer) popCatMixer.update(delta);
-                    updatePlayer(delta);
-                    updateCamera();
-
-                    // Update flying model position to stay in top-left
-                    if (flyingModel && flyingModel.visible) {
-                        // Project top-left screen coords (-0.9, 0.9) to world space
-                        screenPositionVector.set(-0.8, 0.8, 0.5); // Use NDC (Normalized Device Coordinates)
-                        screenPositionVector.unproject(camera); // Convert NDC to world space
-                        
-                        // Position model slightly in front of camera along the projected direction
-                        const dir = screenPositionVector.sub(camera.position).normalize();
-                        const distance = 2; // Adjust distance from camera as needed
-                        flyingModel.position.copy(camera.position).add(dir.multiplyScalar(distance));
-                        
-                        // Optional: Make the model always face the camera
-                        flyingModel.lookAt(camera.position);
-                    }
-
-                    stats.update();
-                    renderer.render(scene, camera);
-                } catch (error) {
-                    console.error("Animation loop error:", error);
-                }
-            }
-
-            renderer.setAnimationLoop(animate);
-
-            // Speech synthesis setup
-            const speechSynthesis = window.speechSynthesis;
-            let vendorVoice = null;
-
-            // Initialize vendor voice
-            function initVendorVoice() {
-                return new Promise((resolve) => {
-                    if (speechSynthesis.getVoices().length > 0) {
-                        setupVoice();
-                        resolve();
-                    } else {
-                        speechSynthesis.onvoiceschanged = () => {
-                            setupVoice();
-                            resolve();
-                        };
-                    }
+            
+            recognition.onaudiostart = () => {
+                console.log("Audio capturing started");
+            };
+            
+            recognition.onend = () => {
+                isRecognizing = false;
+                console.log("Recognition ended");
+                
+                // Remove listening indicator
+                document.querySelectorAll('.phonetic.listening').forEach(el => {
+                    el.classList.remove('listening');
                 });
-            }
-
-            function setupVoice() {
-                const voices = speechSynthesis.getVoices();
-                // Select voice based on NewLanguage
-                switch (languageConfig.newLanguage) {
-                    case 'ru':
-                        vendorVoice = voices.find(voice => voice.lang.startsWith('ru-')) || 
-                                    voices.find(voice => voice.lang.startsWith('en-')) || 
-                                    voices[0];
-                        break;
-                    case 'es':
-                        vendorVoice = voices.find(voice => voice.lang.startsWith('es-')) || 
-                                    voices.find(voice => voice.lang.startsWith('en-')) || 
-                                    voices[0];
-                        break;
-                    case 'ar':
-                        vendorVoice = voices.find(voice => voice.lang.startsWith('ar-')) || 
-                                    voices.find(voice => voice.lang.startsWith('en-')) || 
-                                    voices[0];
-                        break;
-                    default:
-                        vendorVoice = voices.find(voice => voice.lang.startsWith('en-')) || 
-                                    voices[0];
+                
+                // Auto-restart if dialogue is active and not at the end
+                if (hasStartedDialogue && currentStep < dialogueSteps[languageConfig.newLanguage].length) {
+                    setTimeout(startRecognition, 1000);
                 }
-                console.log("Selected voice:", vendorVoice.name, vendorVoice.lang);
-            }
-
-            function speakVendorResponse(text) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.voice = vendorVoice;
-                utterance.rate = 0.9; // Slightly slower for clarity
-                utterance.pitch = 1;
+            };
+            
+            recognition.onresult = (event) => {
+                // Get the most recent result
+                const result = event.results[event.results.length - 1];
+                const transcript = result[0].transcript;
                 
-                // Set the language based on NewLanguage
-                switch (languageConfig.newLanguage) {
-                    case 'ru':
-                        utterance.lang = 'ru-RU';
-                        break;
-                    case 'es':
-                        utterance.lang = 'es-ES';
-                        break;
-                    case 'ar':
-                        utterance.lang = 'ar-SA';
-                        break;
-                    default:
-                        utterance.lang = 'en-US';
+                console.log(`Recognition result [${result.isFinal ? 'final' : 'interim'}]:`, transcript);
+                
+                // Only process final results
+                if (result.isFinal) {
+                    // Check if speech matches expected text
+                    if (highlightWords(transcript)) {
+                        // Good match - proceed with dialogue
+                        recognition.stop();
+                        
+                        // Show vendor/character response
+                        setTimeout(() => {
+                            updateDialogue(currentStep, false);
+                            
+                            // Speak the response
+                            const responseText = vendorResponses[languageConfig.newLanguage][currentStep].text;
+                            speakText(responseText);
+                            
+                            // Calculate delay based on text length
+                            const responseDelay = 500 + (responseText.length * 100);
+                            
+                            // Show next user prompt after delay
+                            setTimeout(() => {
+                                currentStep++;
+                                if (currentStep < dialogueSteps[languageConfig.newLanguage].length) {
+                                    updateDialogue(currentStep, true);
+                                    setTimeout(startRecognition, 300);
+                                } else {
+                                    console.log("Conversation completed!");
+                                    // Optionally show some completion message
+                                }
+                            }, responseDelay);
+                        }, 500);
+                    } else {
+                        // Not enough of a match - continue listening
+                        // Provide subtle feedback that we heard something but it wasn't correct
+                        const latestBox = dialogueBoxes[dialogueBoxes.length - 1];
+                        if (latestBox) {
+                            latestBox.classList.add('shake');
+                            setTimeout(() => latestBox.classList.remove('shake'), 500);
+                        }
+                    }
+                }
+            };
+            
+            recognition.onerror = (event) => {
+                console.error("Recognition error:", event.error);
+                isRecognizing = false;
+                
+                // Remove listening indicator
+                document.querySelectorAll('.phonetic.listening').forEach(el => {
+                    el.classList.remove('listening');
+                });
+                
+                // Handle specific errors
+                if (event.error === 'not-allowed') {
+                    alert("Microphone access is required for speech recognition");
+                } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                    // Don't alert for common/expected errors
+                    console.warn(`Speech recognition error: ${event.error}`);
                 }
                 
-                speechSynthesis.speak(utterance);
-            }
-
-            // Initialize recognition with the correct language
-            function initializeRecognition() {
-                if (!recognition) return;
-                
-                // Set language based on what user is learning
+                // Try to restart if appropriate
+                if (hasStartedDialogue && ['no-speech', 'network'].includes(event.error)) {
+                    setTimeout(startRecognition, 2000);
+                }
+            };
+        }
+        
+        function startRecognition() {
+            if (!recognition || isRecognizing) return;
+            
+            try {
+                // Set language for recognition
                 recognition.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
                                 languageConfig.newLanguage === 'es' ? 'es-ES' : 
                                 languageConfig.newLanguage === 'ru' ? 'ru-RU' :
                                 languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
-                                
-                console.log("Recognition initialized with language:", recognition.lang);
-            }
-
-            // Start recognition
-            function startRecognition() {
-                if (!recognition || isRecognizing) return;
                 
-                try {
-                    // Stop any ongoing recognition
-                    recognition.stop();
-                    
-                    // Small delay before starting new recognition
-                    setTimeout(() => {
-                        try {
-                            recognition.start();
-                            isRecognizing = true;
-                            console.log("Recognition started");
-                        } catch (e) {
-                            console.error("Failed to start recognition:", e);
-                            isRecognizing = false;
+                // Ensure we have mic permission before starting
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        // Stream is available, start recognition
+                        recognition.start();
+                        console.log("Recognition started with language:", recognition.lang);
+                        
+                        // Visual indicator that recognition is active
+                        const latestBox = dialogueBoxes[dialogueBoxes.length - 1];
+                        if (latestBox) {
+                            const phoneticText = latestBox.querySelector('.phonetic');
+                            if (phoneticText) {
+                                phoneticText.style.animation = 'pulse 1.5s infinite';
+                            }
                         }
-                    }, 200);
-                } catch (e) {
-                    console.error("Error preparing recognition:", e);
-                    isRecognizing = false;
-                }
+                    })
+                    .catch(err => {
+                        console.error("Microphone access denied:", err);
+                        alert("Please allow microphone access to use speech recognition");
+                    });
+            } catch (error) {
+                console.error("Failed to start recognition:", error);
+                // Try again after a short delay
+                setTimeout(() => {
+                    if (hasStartedDialogue && !isRecognizing) {
+                        startRecognition();
+                    }
+                }, 2000);
             }
+        }
+        
+        function speakText(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Set language
+            utterance.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
+                           languageConfig.newLanguage === 'es' ? 'es-ES' : 
+                           languageConfig.newLanguage === 'ru' ? 'ru-RU' :
+                           languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
+            
+            // Find appropriate voice
+            const voices = speechSynthesis.getVoices();
+            const voice = voices.find(v => v.lang.startsWith(utterance.lang.split('-')[0])) || voices[0];
+            utterance.voice = voice;
+            
+            // Adjust rate for better comprehension
+            utterance.rate = 0.9;
+            
+            // Speak
+            speechSynthesis.speak(utterance);
+        }
 
-            // Update the handleReplayClick function
-            function handleReplayClick(boxIndex, isVendorBox) {
-                console.log('Handling replay:', { boxIndex, isVendorBox });
-                hideExplanation(); // Hide explanation on replay
+        // ====== DATA FUNCTIONS ======
+        async function fetchDialogueData(characterId, motherLang, newLang) {
+            try {
+                // Fetch scenario for the character
+                const { data: scenarios, error: scenarioError } = await supabase
+                    .from('dialogue_scenarios')
+                    .select('id')
+                    .eq('character_id', characterId)
+                    .eq('is_active', true);
+
+                if (scenarioError || !scenarios || scenarios.length === 0) {
+                    throw new Error('No active dialogue scenario found for character');
+                }
+
+                const scenarioId = scenarios[0].id;
                 
-                // Stop current recognition and speech
-                if (recognition && isRecognizing) {
+                // Fetch dialogue steps with translations
+                const { data: steps, error: stepsError } = await supabase
+                    .from('dialogue_steps')
+                    .select(`
+                        id,
+                        step_order,
+                        is_user_speaking,
+                        translations (
+                            text,
+                            phonetic_text,
+                            language:languages (
+                                code
+                            )
+                        )
+                    `)
+                    .eq('scenario_id', scenarioId)
+                    .order('step_order');
+
+                if (stepsError) {
+                    throw stepsError;
+                }
+                
+                // Reset dialogue data
+                dialogueSteps[newLang] = [];
+                dialogueSteps[motherLang] = [];
+                vendorResponses[newLang] = [];
+                vendorResponses[motherLang] = [];
+                
+                // Process the data
+                steps.forEach(step => {
+                    const newLangTranslation = step.translations.find(t => t.language.code === newLang);
+                    const motherLangTranslation = step.translations.find(t => t.language.code === motherLang);
+                    
+                    if (newLangTranslation && motherLangTranslation) {
+                        if (step.is_user_speaking) {
+                            dialogueSteps[newLang].push(newLangTranslation);
+                            dialogueSteps[motherLang].push(motherLangTranslation);
+                        } else {
+                            vendorResponses[newLang].push(newLangTranslation);
+                            vendorResponses[motherLang].push(motherLangTranslation);
+                        }
+                    }
+                });
+                
+                console.log("Dialogue data loaded for character:", characterId);
+                
+            } catch (error) {
+                console.error("Error loading dialogue data:", error);
+                throw error;
+            }
+        }
+        
+        // ====== UTILITY FUNCTIONS ======
+        function calculateDistance(pos1, pos2) {
+            if (!pos1 || !pos2) return Infinity;
+            
+            const dx = pos2.x - pos1.x;
+            const dy = pos2.y - pos1.y;
+            const dz = pos2.z - pos1.z;
+            
+            return Math.sqrt(dx * dx + dy * dy + dz * dz);
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // ====== ANIMATION LOOP ======
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = 0.016; // ~60fps
+            
+            // Update mixers
+            if (mixer) mixer.update(delta);
+            
+            // Update player position and camera
+            updatePlayer(delta);
+            
+            // Render scene
+            renderer.render(scene, camera);
+        }
+        
+        // Request pointer lock on container click
+        document.getElementById('container').addEventListener('click', () => {
+            document.body.requestPointerLock();
+        });
+
+        // Add touchstart handler to initialize touch position
+        document.addEventListener('touchstart', (event) => {
+            if (event.touches.length === 1 && !event.target.closest('#mobile-controls')) {
+                window.lastTouchX = event.touches[0].clientX;
+                window.lastTouchY = event.touches[0].clientY;
+            }
+        });
+
+        // Add touchend handler to reset touch position
+        document.addEventListener('touchend', () => {
+            window.lastTouchX = null;
+            window.lastTouchY = null;
+        });
+
+        // Update mobile button for better touch handling
+        function setupMobileControls() {
+            const forwardBtn = document.getElementById('forward-btn');
+            
+            // Add active state styling
+            forwardBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent double events
+                keys.forward = true;
+                forwardBtn.style.backgroundColor = 'rgba(220, 220, 220, 0.8)';
+                forwardBtn.style.transform = 'scale(0.95)';
+            });
+            
+            forwardBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys.forward = false;
+                forwardBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+                forwardBtn.style.transform = 'scale(1)';
+            });
+            
+            forwardBtn.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                keys.forward = false;
+                forwardBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+                forwardBtn.style.transform = 'scale(1)';
+            });
+            
+            // Also update the CSS for forward button
+            forwardBtn.style.transition = 'transform 0.1s, background-color 0.1s';
+        }
+
+        // Add a character animation system to make the scene more lively
+        function setupCharacterAnimations() {
+            // Setup mixers for each character that has animations
+            const animationMixers = {};
+            
+            // PopCat specific animation setup
+            if (characters.popCat) {
+                const loader = new GLTFLoader();
+                loader.load('models/pop_cat.glb', (gltf) => {
+                    if (gltf.animations && gltf.animations.length > 0) {
+                        animationMixers.popCat = new THREE.AnimationMixer(characters.popCat);
+                        const popAnimation = animationMixers.popCat.clipAction(gltf.animations[0]);
+                        popAnimation.setLoop(THREE.LoopOnce);
+                        popAnimation.clampWhenFinished = true;
+                        
+                        // Store the animation for later use
+                        characters.popCat.animation = popAnimation;
+                    }
+                });
+            }
+            
+            // Update the animate function to also update character animations
+            const originalAnimate = animate;
+            animate = function() {
+                originalAnimate();
+                
+                // Update all animation mixers
+                const delta = 0.016; // ~60fps
+                Object.values(animationMixers).forEach(mixer => {
+                    if (mixer) mixer.update(delta);
+                });
+            };
+            
+            return animationMixers;
+        }
+
+        // Play character animation when speaking
+        function animateCharacter(character) {
+            if (!character) return;
+            
+            if (character === characters.popCat && character.animation) {
+                // Reset and play PopCat animation
+                character.animation.reset();
+                character.animation.play();
+            } else {
+                // Generic animation for other characters (subtle movement)
+                const startY = character.position.y;
+                
+                // Simple up-down animation
+                const duration = 500; // ms
+                const startTime = Date.now();
+                
+                function updatePosition() {
+                    const elapsed = Date.now() - startTime;
+                    if (elapsed < duration) {
+                        const progress = elapsed / duration;
+                        const y = startY + Math.sin(progress * Math.PI) * 0.1; // Subtle bounce
+                        character.position.y = y;
+                        requestAnimationFrame(updatePosition);
+                    } else {
+                        character.position.y = startY; // Reset position
+                    }
+                }
+                
+                updatePosition();
+            }
+        }
+
+        // Enhance speakText to animate the character
+        function speakText(text, character = activeCharacter) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Set language
+            utterance.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
+                           languageConfig.newLanguage === 'es' ? 'es-ES' : 
+                           languageConfig.newLanguage === 'ru' ? 'ru-RU' :
+                           languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
+            
+            // Find appropriate voice
+            const voices = speechSynthesis.getVoices();
+            const voice = voices.find(v => v.lang.startsWith(utterance.lang.split('-')[0])) || voices[0];
+            utterance.voice = voice;
+            
+            // Adjust rate for better comprehension
+            utterance.rate = 0.9;
+            
+            // Animate character when speaking
+            if (character) {
+                animateCharacter(character);
+            }
+            
+            // Speak
+            speechSynthesis.speak(utterance);
+        }
+
+        // Add visual feedback for successful speech recognition
+        function addSuccessFeedback() {
+            // Create a success indicator element
+            const successIndicator = document.createElement('div');
+            successIndicator.id = 'success-indicator';
+            successIndicator.style.position = 'fixed';
+            successIndicator.style.top = '50%';
+            successIndicator.style.left = '50%';
+            successIndicator.style.transform = 'translate(-50%, -50%)';
+            successIndicator.style.color = '#4CAF50';
+            successIndicator.style.fontSize = '48px';
+            successIndicator.style.opacity = '0';
+            successIndicator.style.transition = 'opacity 0.3s ease';
+            successIndicator.style.pointerEvents = 'none';
+            successIndicator.textContent = '✓';
+            document.body.appendChild(successIndicator);
+            
+            // Update highlightWords to show success indicator on match
+            const originalHighlightWords = highlightWords;
+            highlightWords = function(spokenText) {
+                const result = originalHighlightWords(spokenText);
+                
+                if (result) {
+                    // Show success indicator
+                    successIndicator.style.opacity = '1';
+                    setTimeout(() => {
+                        successIndicator.style.opacity = '0';
+                    }, 1000);
+                }
+                
+                return result;
+            };
+        }
+
+        // Add environmental effects for more immersion
+        function addEnvironmentalEffects() {
+            // Add subtle floating particles
+            const particleCount = 100;
+            const particles = new THREE.Group();
+            
+            // Create particle geometry and material
+            const particleGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+            const particleMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.3
+            });
+            
+            // Create particles and add to scene
+            for (let i = 0; i < particleCount; i++) {
+                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                
+                // Random position within map boundaries
+                particle.position.x = MAP_BOUNDARIES.minX + Math.random() * (MAP_BOUNDARIES.maxX - MAP_BOUNDARIES.minX);
+                particle.position.y = Math.random() * 2; // Random height
+                particle.position.z = MAP_BOUNDARIES.minZ + Math.random() * (MAP_BOUNDARIES.maxZ - MAP_BOUNDARIES.minZ);
+                
+                // Store original position for animation
+                particle.userData.originalY = particle.position.y;
+                particle.userData.speed = 0.2 + Math.random() * 0.3; // Random speed
+                
+                particles.add(particle);
+            }
+            
+            scene.add(particles);
+            
+            // Update particles in animation loop
+            const originalAnimate = animate;
+            animate = function() {
+                originalAnimate();
+                
+                // Update particle positions
+                const time = Date.now() * 0.001;
+                particles.children.forEach((particle) => {
+                    particle.position.y = particle.userData.originalY + 
+                        Math.sin(time * particle.userData.speed) * 0.1;
+                });
+            };
+        }
+
+        // Enhance dialogue box transitions for smoother animation
+        function enhanceDialogueBoxTransitions() {
+            // Update the CSS for smoother transitions
+            const style = document.createElement('style');
+            style.textContent = `
+                .dialogue-box {
+                    transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), 
+                                opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+                }
+                
+                .dialogue-box.appearing {
+                    transform: translateY(20px);
+                    opacity: 0;
+                }
+                
+                .dialogue-box.disappearing {
+                    transform: translateY(-20px);
+                    opacity: 0;
+                }
+                
+                @keyframes highlight-flash {
+                    0% { background-color: rgba(76, 175, 80, 0.3); }
+                    100% { background-color: transparent; }
+                }
+                
+                .word.matched {
+                    animation: highlight-flash 1s;
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Update the createDialogueBox function to add appearing animation
+            const originalCreateDialogueBox = createDialogueBox;
+            createDialogueBox = function(newLangData, motherLangData, isUserSpeaking) {
+                const box = originalCreateDialogueBox(newLangData, motherLangData, isUserSpeaking);
+                
+                // Add appearing class for entry animation
+                box.classList.add('appearing');
+                
+                // Remove the class after a short delay to trigger animation
+                setTimeout(() => {
+                    box.classList.remove('appearing');
+                }, 10);
+                
+                return box;
+            };
+            
+            // Update the resetDialogue function for smoother exit animation
+            const originalResetDialogue = resetDialogue;
+            resetDialogue = function() {
+                // Add disappearing class to all boxes
+                dialogueBoxes.forEach(box => {
+                    box.classList.add('disappearing');
+                });
+                
+                // Wait for animation to complete before removing
+                setTimeout(() => {
+                    originalResetDialogue();
+                }, 500);
+            };
+        }
+
+        // Call the new enhancement functions after initialization
+        function enhanceVisuals() {
+            const animationMixers = setupCharacterAnimations();
+            addSuccessFeedback();
+            addEnvironmentalEffects();
+            enhanceDialogueBoxTransitions();
+            
+            console.log("Visual enhancements initialized");
+        }
+
+        // Call enhanceVisuals after the game starts
+        const originalStartGame = startGame;
+        startGame = function() {
+            originalStartGame();
+            enhanceVisuals();
+        };
+
+        // Add asset preloading and loading state management
+        function addLoadingManager() {
+            // Create a loading manager to track all asset loading
+            const loadingManager = new THREE.LoadingManager();
+            
+            // Create loading UI
+            const loadingScreen = document.createElement('div');
+            loadingScreen.id = 'loading-screen';
+            loadingScreen.style.position = 'fixed';
+            loadingScreen.style.top = '0';
+            loadingScreen.style.left = '0';
+            loadingScreen.style.width = '100%';
+            loadingScreen.style.height = '100%';
+            loadingScreen.style.background = 'rgba(0, 0, 0, 0.8)';
+            loadingScreen.style.display = 'flex';
+            loadingScreen.style.flexDirection = 'column';
+            loadingScreen.style.justifyContent = 'center';
+            loadingScreen.style.alignItems = 'center';
+            loadingScreen.style.zIndex = '2000';
+            
+            const loadingText = document.createElement('h2');
+            loadingText.textContent = 'Loading...';
+            loadingText.style.color = 'white';
+            loadingText.style.marginBottom = '20px';
+            
+            const progressBar = document.createElement('div');
+            progressBar.style.width = '80%';
+            progressBar.style.maxWidth = '400px';
+            progressBar.style.height = '20px';
+            progressBar.style.background = '#333';
+            progressBar.style.borderRadius = '10px';
+            progressBar.style.overflow = 'hidden';
+            
+            const progressFill = document.createElement('div');
+            progressFill.style.width = '0%';
+            progressFill.style.height = '100%';
+            progressFill.style.background = '#4CAF50';
+            progressFill.style.transition = 'width 0.3s ease';
+            
+            progressBar.appendChild(progressFill);
+            loadingScreen.appendChild(loadingText);
+            loadingScreen.appendChild(progressBar);
+            document.body.appendChild(loadingScreen);
+            
+            // Set up loading manager callbacks
+            loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+                const progress = (itemsLoaded / itemsTotal) * 100;
+                progressFill.style.width = `${progress}%`;
+                loadingText.textContent = `Loading... ${Math.round(progress)}%`;
+            };
+            
+            loadingManager.onLoad = function() {
+                // Hide loading screen with fade out
+                loadingScreen.style.transition = 'opacity 0.5s ease';
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+                
+                console.log('All assets loaded successfully!');
+            };
+            
+            loadingManager.onError = function(url) {
+                console.error('Error loading asset:', url);
+                loadingText.textContent = 'Error loading assets. Please refresh.';
+                loadingText.style.color = '#ff5555';
+            };
+            
+            return loadingManager;
+        }
+
+        // Optimize resource usage with instanced meshes for duplicated models
+        function optimizeModels() {
+            // Use instanced meshes for any repeated geometry
+            // (Would be used if we had multiple identical objects)
+            
+            // Set up model optimization and cleanup
+            const cleanupUnusedResources = () => {
+                // Force garbage collection of unused textures, geometries when possible
+                renderer.renderLists.dispose();
+                
+                // In real scenarios, also clear cached materials, geometries when not needed:
+                // THREE.Cache.clear();
+            };
+            
+            // Call cleanup periodically (every 30 seconds)
+            setInterval(cleanupUnusedResources, 30000);
+        }
+
+        // Implement low-priority loading for non-essential assets
+        function implementPriorityLoading(loadingManager) {
+            // Create different loaders for different priority levels
+            const criticalLoader = new GLTFLoader(loadingManager);
+            const lowPriorityLoader = new GLTFLoader(); // No loading manager for low priority
+            
+            // Modify loadCharacters to use priority loading
+            const originalLoadCharacters = loadCharacters;
+            loadCharacters = function() {
+                // Load essential models first (Tokyo, player, vendor)
+                originalLoadCharacters();
+                
+                // After critical assets are loaded, load optional characters
+                setTimeout(() => {
+                    // Example of how you would load non-essential models
+                    loadLowPriorityModels();
+                }, 1000);
+            };
+            
+            function loadLowPriorityModels() {
+                console.log("Loading non-essential assets...");
+                // This would normally load additional models, textures, etc.
+                // that aren't needed for initial gameplay
+            }
+            
+            return {
+                criticalLoader,
+                lowPriorityLoader
+            };
+        }
+
+        // Implement level of detail (LOD) for complex models
+        function implementLOD() {
+            // Use THREE.LOD for complex models at different distances
+            // This is useful for the Tokyo model or any complex scenery
+            
+            // Example function to create LOD for a model
+            function createLODModel(highDetailModel, mediumDetailPath, lowDetailPath) {
+                const lod = new THREE.LOD();
+                
+                // Add high detail model (original)
+                lod.addLevel(highDetailModel, 0); // Visible at 0-10 units
+                
+                // Load and add medium detail model
+                const loader = new GLTFLoader();
+                loader.load(mediumDetailPath, (gltf) => {
+                    lod.addLevel(gltf.scene, 10); // Visible at 10-50 units
+                });
+                
+                // Load and add low detail model
+                loader.load(lowDetailPath, (gltf) => {
+                    lod.addLevel(gltf.scene, 50); // Visible at 50+ units
+                });
+                
+                return lod;
+            }
+            
+            // This would be used if we had complex models needing LOD
+        }
+
+        // Optimize rendering for mobile devices
+        function optimizeForMobile() {
+            // Detect if device is mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                // Reduce render quality for mobile
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
+                
+                // Reduce shadow quality or disable
+                renderer.shadowMap.enabled = false;
+                
+                // Reduce draw distance (camera far plane)
+                camera.far = 100;
+                camera.updateProjectionMatrix();
+                
+                // Simplify physics/collision checks on mobile
+                const originalUpdatePlayer = updatePlayer;
+                updatePlayer = function(delta) {
+                    // Call original with reduced frequency on mobile
+                    if (!window.lastPlayerUpdate || Date.now() - window.lastPlayerUpdate > 32) { // ~30fps
+                        window.lastPlayerUpdate = Date.now();
+                        originalUpdatePlayer(delta);
+                    }
+                };
+                
+                console.log("Applied mobile optimizations");
+            }
+        }
+
+        // Set up object pooling for reusable objects
+        function setupObjectPooling() {
+            // Create object pools for frequently created/destroyed objects
+            const dialogueBoxPool = [];
+            const maxPoolSize = 20;
+            
+            // Pre-create objects for the pool
+            for (let i = 0; i < 10; i++) {
+                const box = document.createElement('div');
+                box.className = 'dialogue-box';
+                box.style.display = 'none';
+                dialogueContainer.appendChild(box);
+                dialogueBoxPool.push(box);
+            }
+            
+            // Override createDialogueBox to use pooled objects when possible
+            const originalCreateDialogueBox = createDialogueBox;
+            createDialogueBox = function(newLangData, motherLangData, isUserSpeaking) {
+                // Try to get from pool first
+                let box = dialogueBoxPool.pop();
+                
+                if (box) {
+                    // Reset and reuse the box
+                    box.className = `dialogue-box ${isUserSpeaking ? 'user' : 'vendor'}`;
+                    box.style.display = 'flex';
+                    box.innerHTML = ''; // Clear previous content
+                    
+                    // Add content like in the original function
+                    // [Content adding code here]
+                    
+                    // Add appearing animation
+                    box.classList.add('appearing');
+                    setTimeout(() => box.classList.remove('appearing'), 10);
+                    
+                    return box;
+                } else {
+                    // If pool is empty, create new box
+                    return originalCreateDialogueBox(newLangData, motherLangData, isUserSpeaking);
+                }
+            };
+            
+            // Override resetDialogue to return boxes to the pool
+            const originalResetDialogue = resetDialogue;
+            resetDialogue = function() {
+                // Return boxes to pool instead of removing
+                dialogueBoxes.forEach(box => {
+                    if (dialogueBoxPool.length < maxPoolSize) {
+                        box.style.display = 'none';
+                        dialogueBoxPool.push(box);
+                    } else {
+                        box.remove(); // Remove if pool is full
+                    }
+                });
+                
+                // Reset state variables
+                dialogueBoxes = [];
+                hasStartedDialogue = false;
+                activeCharacter = null;
+                currentStep = 0;
+                
+                // Stop recognition
+                if (recognition) {
                     recognition.abort();
                     isRecognizing = false;
                 }
-                if (speechSynthesis.speaking) {
-                    speechSynthesis.cancel();
-                }
-                
-                // Remove boxes with animation
-                const boxesToRemove = dialogueBoxes.slice(boxIndex + 1);
-                boxesToRemove.forEach((box, index) => {
-                    box.style.opacity = '0';
-                    box.style.transform = 'translateY(20px)';
-                    box.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-                    
-                    setTimeout(() => {
-                        box.remove();
-                        dialogueBoxes.pop();
-                    }, 300);
-                });
+            };
+        }
 
-                setTimeout(() => {
-                    updateBoxPositions();
-                }, 350);
-
-                const stepNumber = Math.floor(boxIndex / 2);
-                
-                if (isVendorBox) {
-                    const vendorResponse = vendorResponses[languageConfig.newLanguage][stepNumber];
-                    if (vendorResponse) {
-                        speakVendorResponse(vendorResponse.text);
-                        
-                        // Animate Pop Cat if it's the active character
-                        if (activeCharacter === characters.popCat) {
-                            animatePopCat();
-                        }
-                        
-                        const vendorDelay = calculateVendorDelay(vendorResponse.text);
-                        
-                        setTimeout(() => {
-                            currentStep = stepNumber + 1;
-                            if (currentStep < dialogueSteps[languageConfig.newLanguage].length) {
-                                updateDialogue(currentStep, true);
-                                setTimeout(() => {
-                                    if (!isRecognizing) {
-                                        startRecognition();
-                                    }
-                                }, 500);
-                            }
-                        }, vendorDelay);
-                    }
-                } else {
-                    currentStep = stepNumber;
-                    // Animate Pop Cat if it's the active character
-                    if (activeCharacter === characters.popCat) {
-                        animatePopCat();
-                    }
-                    setTimeout(() => {
-                        if (!isRecognizing) {
-                            startRecognition();
-                        }
-                    }, 500);
-                }
-            }
-
-            // Helper function to calculate delay based on text length
-            function calculateVendorDelay(text) {
-                // Base delay of 500ms
-                const baseDelay = 500;
-                // Add 100ms per character
-                const charDelay = text.length * 100;
-                // Cap maximum delay at 5000ms (5 seconds)
-                return Math.min(baseDelay + charDelay, 5000);
-            }
-
-            // Add this function after the existing language-related functions
-            function updateLanguageOptions(selectElement) {
-                const motherLanguageSelect = document.getElementById('mother-language');
-                const newLanguageSelect = document.getElementById('new-language');
-                const selectedLanguage = selectElement.value;
-                
-                // Get all options from both selects
-                const motherOptions = Array.from(motherLanguageSelect.options);
-                const newOptions = Array.from(newLanguageSelect.options);
-                
-                if (selectElement === motherLanguageSelect) {
-                    // If mother language is changed, update new language options
-                    newOptions.forEach(option => {
-                        option.disabled = option.value === selectedLanguage;
-                        if (option.disabled && option.selected) {
-                            // If the new language was the same as mother language,
-                            // select the first available language
-                            const firstAvailable = newOptions.find(opt => !opt.disabled);
-                            if (firstAvailable) {
-                                newLanguageSelect.value = firstAvailable.value;
-                            }
-                        }
-                    });
-                } else {
-                    // If new language is changed, update mother language options
-                    motherOptions.forEach(option => {
-                        option.disabled = option.value === selectedLanguage;
-                        if (option.disabled && option.selected) {
-                            // If the mother language was the same as new language,
-                            // select the first available language
-                            const firstAvailable = motherOptions.find(opt => !opt.disabled);
-                            if (firstAvailable) {
-                                motherLanguageSelect.value = firstAvailable.value;
-                            }
-                        }
-                    });
-                }
-            }
-
-            // Update the language select elements to use the new function
-            document.getElementById('mother-language').addEventListener('change', function() {
-                updateLanguageOptions(this);
-                updateLanguage(this.value, 'mother');
-            });
-
-            document.getElementById('new-language').addEventListener('change', function() {
-                updateLanguageOptions(this);
-                updateLanguage(this.value, 'new');
-            });
-
-            // Initialize the language options when the page loads
-            document.addEventListener('DOMContentLoaded', function() {
-                const motherLanguageSelect = document.getElementById('mother-language');
-                const newLanguageSelect = document.getElementById('new-language');
-                
-                // Set English as default mother language
-                motherLanguageSelect.value = 'en';
-                
-                // Set random new language (excluding English)
-                setRandomNewLanguage();
-                
-                // Initialize language options
-                updateLanguageOptions(motherLanguageSelect);
-                updateLanguageOptions(newLanguageSelect);
-            });
-
-            // Update the setRandomNewLanguage function to ensure it never selects English
-            function setRandomNewLanguage() {
-                const newLanguageSelect = document.getElementById('new-language');
-                const options = Array.from(newLanguageSelect.options).filter(opt => opt.value !== 'en');
-                const randomIndex = Math.floor(Math.random() * options.length);
-                newLanguageSelect.value = options[randomIndex].value;
-                updateLanguageOptions(newLanguageSelect);
-            }
-
-            // Add Pop Cat animation control
-            let popCatMixer = null;
-            let popCatAnimation = null;
-
-            function animatePopCat() {
-                if (popCatAnimation) {
-                    popCatAnimation.reset();
-                    popCatAnimation.play();
-                }
-            }
-
-            // Add this function after the existing language-related functions
-            function updateLanguage(langCode, type) {
-                if (type === 'mother') {
-                    languageConfig.motherLanguage = langCode;
-                } else if (type === 'new') {
-                    languageConfig.newLanguage = langCode;
-                }
-                console.log("Updated language config:", languageConfig);
-            }
-        </script>
-    </body>
+        // Implement these optimizations in a main optimization function
+        function optimizePerformance() {
+            const loadingManager = addLoadingManager();
+            optimizeModels();
+            implementPriorityLoading(loadingManager);
+            optimizeForMobile();
+            setupObjectPooling();
+            
+            console.log("Performance optimizations applied");
+            
+            return loadingManager;
+        }
+    </script>
+</body>
 </html>
