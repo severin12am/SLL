@@ -1,68 +1,99 @@
 import * as THREE from 'three';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { setupCharacterAnimations } from './animations.js';
-import { calculateDistance } from '../utils/distance.js';
+import { getScene } from '../scene/scene.js';
+import { CHARACTER_CONFIG } from '../config.js';
+import { registerCharacter } from '../game/game-manager.js';
 
 // Character registry to keep track of all loaded characters
-const characters = {
-    player: null,
-    vendor: null,
-    cat: null
-};
+const characters = {};
 
 /**
  * Load a character model
- * @param {Object} scene - The THREE.js scene to add the character to
- * @param {string} modelPath - Path to the character FBX model
+ * @param {string} modelPath - Path to the character GLTF/GLB model
  * @param {Object} position - Initial position as {x, y, z}
  * @param {number} scale - Scale factor for the model
- * @param {string} characterId - Identifier for the character (player, vendor, cat)
- * @param {Object} loadingManager - THREE.LoadingManager instance
+ * @param {string} characterId - Identifier for the character
  * @returns {Promise<Object>} - Promise resolving to the loaded character object
  */
-export function loadCharacter(scene, modelPath, position, scale, characterId, loadingManager) {
+export function loadCharacter(modelPath, position, scale, characterId) {
     return new Promise((resolve, reject) => {
-        const loader = new FBXLoader(loadingManager);
+        const scene = getScene();
+        if (!scene) {
+            return reject(new Error('Scene not initialized'));
+        }
         
-        loader.load(modelPath, (fbx) => {
-            console.log(`Loading character: ${characterId}`);
+        console.log(`Loading character: ${characterId} from ${modelPath}`);
+        
+        const loader = new GLTFLoader();
+        
+        loader.load(modelPath, (gltf) => {
+            const model = gltf.scene;
             
             // Set up character model
-            fbx.position.set(position.x, position.y, position.z);
-            fbx.scale.set(scale, scale, scale);
-            fbx.traverse(child => {
+            model.position.set(position.x, position.y, position.z);
+            model.scale.set(scale, scale, scale);
+            
+            // Set up shadows
+            model.traverse(child => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
                 }
             });
+            
+            // Create mixer for animations
+            const mixer = new THREE.AnimationMixer(model);
 
             // Create character object with additional properties
             const character = {
-                model: fbx,
                 id: characterId,
-                position: fbx.position,
-                rotation: fbx.rotation,
-                mixer: new THREE.AnimationMixer(fbx),
+                model: model,
+                position: model.position,
+                rotation: model.rotation,
+                mixer: mixer,
                 animations: {},
+                animationClips: gltf.animations || [],
                 isInteractive: characterId !== 'player',
-                dialogueId: characterId,
-                boundingBox: new THREE.Box3().setFromObject(fbx)
+                collisionDistance: CHARACTER_CONFIG[characterId]?.collisionDistance || 0.5,
+                update: function(deltaTime) {
+                    if (this.mixer) {
+                        this.mixer.update(deltaTime);
+                    }
+                    // Update bounding box
+                    if (!this.boundingBox) {
+                        this.boundingBox = new THREE.Box3();
+                    }
+                    this.boundingBox.setFromObject(this.model);
+                }
             };
             
             // Add character to scene
-            scene.add(fbx);
+            scene.add(model);
             
-            // Register character in the global registry
+            // Register character in the registry
             characters[characterId] = character;
+            
+            // Register with game manager
+            registerCharacter(characterId, character);
+            
             console.log(`Character loaded: ${characterId}`);
             
-            // Setup animations and resolve the promise
-            setupCharacterAnimations(character)
+            // Setup animations with the loaded animation clips
+            setupCharacterAnimations(character, characterId)
                 .then(() => resolve(character))
-                .catch(err => reject(err));
+                .catch(err => {
+                    console.error(`Error setting up animations for ${characterId}:`, err);
+                    resolve(character); // Resolve anyway to continue game flow
+                });
             
-        }, undefined, (error) => {
+        }, 
+        // Progress callback
+        (xhr) => {
+            console.log(`${characterId} ${Math.round(xhr.loaded / xhr.total * 100)}% loaded`);
+        },
+        // Error callback
+        (error) => {
             console.error(`Error loading character ${characterId}:`, error);
             reject(error);
         });
@@ -71,53 +102,51 @@ export function loadCharacter(scene, modelPath, position, scale, characterId, lo
 
 /**
  * Create the player character
- * @param {Object} scene - The THREE.js scene
- * @param {THREE.Camera} camera - The player camera
- * @param {Object} loadingManager - THREE.LoadingManager instance
  * @returns {Promise<Object>} - Promise resolving to the player character
  */
-export function createPlayer(scene, camera, loadingManager) {
-    const playerPosition = { x: 0, y: 0, z: 0 };
-    const playerScale = 0.01;
-    
-    return loadCharacter(scene, 'models/characters/player.fbx', playerPosition, playerScale, 'player', loadingManager)
-        .then(player => {
-            // Add camera to player
-            player.camera = camera;
-            
-            // Add player-specific methods
-            player.update = (deltaTime) => {
-                // Update player animations if available
-                if (player.mixer) {
-                    player.mixer.update(deltaTime);
-                }
-            };
-            
-            console.log('Player character created');
-            return player;
-        });
+export function loadPlayer() {
+    const config = CHARACTER_CONFIG.player;
+    return loadCharacter(
+        'models/player.glb',
+        config.initialPosition,
+        config.scale,
+        'player'
+    );
 }
 
 /**
  * Load all NPC characters
- * @param {Object} scene - The THREE.js scene
- * @param {Object} loadingManager - THREE.LoadingManager instance 
  * @returns {Promise<Array>} - Promise resolving to an array of all NPCs
  */
-export function loadNPCs(scene, loadingManager) {
-    const npcs = [];
+export function loadCharacters() {
+    console.log('Loading all characters...');
+    const characterPromises = [];
     
-    // Vendor character
-    const vendorPosition = { x: 3, y: 0, z: -3 };
-    const vendorPromise = loadCharacter(scene, 'models/characters/vendor.fbx', vendorPosition, 0.01, 'vendor', loadingManager);
-    npcs.push(vendorPromise);
+    // Load player
+    const playerPromise = loadPlayer();
+    characterPromises.push(playerPromise);
     
-    // Cat character
-    const catPosition = { x: -3, y: 0, z: -2 };
-    const catPromise = loadCharacter(scene, 'models/characters/cat.fbx', catPosition, 0.01, 'cat', loadingManager);
-    npcs.push(catPromise);
+    // Load vendor character
+    const vendorConfig = CHARACTER_CONFIG.vendor;
+    const vendorPromise = loadCharacter(
+        'models/vendor.glb',
+        vendorConfig.position,
+        vendorConfig.scale,
+        vendorConfig.id
+    );
+    characterPromises.push(vendorPromise);
     
-    return Promise.all(npcs);
+    // Load cat character
+    const catConfig = CHARACTER_CONFIG.cat;
+    const catPromise = loadCharacter(
+        'models/pop_cat.glb',
+        catConfig.position,
+        catConfig.scale,
+        catConfig.id
+    );
+    characterPromises.push(catPromise);
+    
+    return Promise.all(characterPromises);
 }
 
 /**
@@ -138,27 +167,28 @@ export function getAllCharacters() {
 }
 
 /**
- * Check if the player is close to any interactive character
- * @param {Object} player - The player character
- * @returns {Object|null} - The closest interactive character within range, or null
+ * Get the nearest interactive character to the player
+ * @param {THREE.Vector3} playerPosition - Player's position
+ * @param {number} maxDistance - Maximum distance to consider
+ * @returns {Object|null} The nearest character or null if none found
  */
-export function getNearestInteractiveCharacter(player) {
-    const MAX_INTERACTION_DISTANCE = 2.0;
-    let closestCharacter = null;
-    let closestDistance = Infinity;
+export function getNearestInteractiveCharacter(playerPosition, maxDistance = 2.0) {
+    if (!playerPosition) return null;
+    
+    let nearestCharacter = null;
+    let shortestDistance = maxDistance;
     
     Object.values(characters).forEach(character => {
-        if (character && character.isInteractive) {
-            const distance = calculateDistance(player.position, character.position);
-            
-            if (distance < MAX_INTERACTION_DISTANCE && distance < closestDistance) {
-                closestDistance = distance;
-                closestCharacter = character;
+        if (character && character.id !== 'player' && character.isInteractive) {
+            const distance = playerPosition.distanceTo(character.position);
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                nearestCharacter = character;
             }
         }
     });
     
-    return closestCharacter;
+    return nearestCharacter;
 }
 
 /**
@@ -167,13 +197,8 @@ export function getNearestInteractiveCharacter(player) {
  */
 export function updateCharacters(deltaTime) {
     Object.values(characters).forEach(character => {
-        if (character && character.mixer) {
-            character.mixer.update(deltaTime);
-        }
-        
-        // Update character bounding box
-        if (character && character.model) {
-            character.boundingBox.setFromObject(character.model);
+        if (character && character.update) {
+            character.update(deltaTime);
         }
     });
 } 

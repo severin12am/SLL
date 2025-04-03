@@ -1,45 +1,95 @@
 // Main entry point for the application
+import * as THREE from 'three';
 import { initScene, animate } from './scene/scene.js';
+import { createLoadingManager, hideLoadingScreen, showLoadingError } from './ui/loading.js';
+import { initGameState } from './game/game-manager.js';
 import { setupEventListeners } from './input/input-manager.js';
-import { startGame } from './game/game-manager.js';
-import { createLoadingScreen } from './ui/loading.js';
-import { MAP_BOUNDARIES, DIALOGUE_DISTANCE } from './config.js';
+import { initDebugUI } from './ui/debug.js';
+import { DEBUG_CONFIG } from './config.js';
+import { logger } from './utils/logger.js';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Initializing application...');
-    
-    // Set up loading screen
-    const loadingScreen = createLoadingScreen();
-    document.body.appendChild(loadingScreen);
+    logger.info('Application starting...', 'MAIN');
     
     try {
+        // Create loading manager
+        const loadingManager = createLoadingManager();
+        
         // Initialize scene
+        logger.info('Initializing 3D scene...', 'MAIN');
         const { scene, camera, renderer } = await initScene();
         
+        // Initialize game state with scene data
+        logger.info('Initializing game state...', 'MAIN');
+        initGameState({ scene, camera, renderer });
+        
         // Setup input event listeners
+        logger.info('Setting up input handlers...', 'MAIN');
         setupEventListeners(camera);
         
-        // Add click event for game container to request pointer lock
-        document.getElementById('container').addEventListener('click', () => {
-            document.body.requestPointerLock();
-        });
+        // Set up event listeners
+        logger.info('Setting up UI event listeners...', 'MAIN');
+        setupUIEventListeners();
         
-        // Add start game event listener
-        document.getElementById('start-game').addEventListener('click', startGame);
+        // Initialize debug UI if enabled
+        if (DEBUG_CONFIG.showStats) {
+            logger.info('Initializing debug UI...', 'MAIN');
+            initDebugUI();
+        }
         
         // Start animation loop
+        logger.info('Starting animation loop...', 'MAIN');
         animate();
         
-        console.log('Application initialized successfully');
+        logger.info('Application initialized successfully', 'MAIN');
     } catch (error) {
-        console.error('Error initializing application:', error);
-        document.getElementById('loading-screen').innerHTML = `
-            <div style="color: white; text-align: center;">
-                <h2>Error Initializing Application</h2>
-                <p>${error.message}</p>
-                <button onclick="location.reload()">Reload</button>
-            </div>
-        `;
+        logger.error(`Initialization failed: ${error.message}`, 'MAIN');
+        console.error(error); // Log full error object for stack trace
+        showLoadingError(error);
     }
-}); 
+});
+
+/**
+ * Set up UI event listeners
+ */
+function setupUIEventListeners() {
+    // Add click event for game container to request pointer lock
+    document.getElementById('container').addEventListener('click', () => {
+        document.body.requestPointerLock();
+    });
+    
+    // Start game button
+    document.getElementById('start-game').addEventListener('click', () => {
+        logger.info('Starting game...', 'UI');
+        // Import game manager module dynamically to avoid circular dependencies
+        import('./game/game-manager.js').then(({ startGame }) => {
+            startGame();
+        });
+    });
+    
+    // Pause menu buttons
+    document.getElementById('resume-button')?.addEventListener('click', () => {
+        logger.debug('Resume button clicked', 'UI');
+        import('./game/game-manager.js').then(({ togglePause }) => {
+            togglePause();
+        });
+    });
+    
+    document.getElementById('restart-button')?.addEventListener('click', () => {
+        logger.info('Restarting application...', 'UI');
+        location.reload();
+    });
+    
+    // Add ESC key listener for pause menu
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            logger.debug('ESC key pressed, toggling pause', 'UI');
+            import('./game/game-manager.js').then(({ togglePause }) => {
+                togglePause();
+            });
+        }
+    });
+    
+    logger.debug('UI event listeners setup complete', 'UI');
+} 

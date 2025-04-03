@@ -73,7 +73,7 @@ export const CAMERA_CONFIG = {
 // Character settings
 export const CHARACTER_CONFIG = {
     player: {
-        modelPath: 'models/characters/player.fbx',
+        modelPath: 'models/player.glb',
         scale: 0.01,
         initialPosition: { x: 0, y: 0, z: 0 },
         walkSpeed: 2.5,
@@ -86,7 +86,7 @@ export const CHARACTER_CONFIG = {
     vendor: {
         id: 'vendor',
         name: 'Merchant',
-        modelPath: 'models/characters/vendor.fbx',
+        modelPath: 'models/vendor.glb',
         scale: 0.01,
         position: { x: 3, y: 0, z: -3 },
         rotation: { x: 0, y: Math.PI / 2, z: 0 },
@@ -96,8 +96,8 @@ export const CHARACTER_CONFIG = {
     cat: {
         id: 'cat',
         name: 'Magic Cat',
-        modelPath: 'models/characters/cat.fbx',
-        scale: 0.01,
+        modelPath: 'models/pop_cat.glb',
+        scale: 0.05,
         position: { x: -3, y: 0, z: -2 },
         rotation: { x: 0, y: -Math.PI / 4, z: 0 },
         isInteractive: true,
@@ -170,8 +170,11 @@ export const DEBUG_CONFIG = {
     showColliders: false,
     showStats: true,
     logLevel: 'info',  // debug, info, warn, error
-    skipIntro: false
+    skipIntro: false,
+    isDevelopment: true
 };
 
 // Mobile detection
-export const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent); 
+export const isMobile = (typeof window !== 'undefined') && 
+    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.matchMedia && window.matchMedia('(max-width: 767px)').matches)); 

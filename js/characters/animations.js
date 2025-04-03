@@ -1,104 +1,84 @@
 import * as THREE from 'three';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-
-// Animation names to paths mapping
-const ANIMATION_PATHS = {
-    player: {
-        idle: 'models/animations/player/idle.fbx',
-        walking: 'models/animations/player/walking.fbx',
-        talking: 'models/animations/player/talking.fbx'
-    },
-    vendor: {
-        idle: 'models/animations/vendor/idle.fbx',
-        talking: 'models/animations/vendor/talking.fbx'
-    },
-    cat: {
-        idle: 'models/animations/cat/idle.fbx',
-        meow: 'models/animations/cat/meow.fbx'
-    }
-};
+import { ANIMATIONS_CONFIG } from '../config.js';
 
 /**
- * Load animation for a character
- * @param {Object} character - The character object with mixer
- * @param {string} animName - The animation name
- * @param {string} animPath - Path to the FBX animation file
- * @param {Object} loadingManager - THREE.LoadingManager instance
- * @returns {Promise<Object>} Promise resolving to animation data
- */
-function loadAnimation(character, animName, animPath, loadingManager) {
-    return new Promise((resolve, reject) => {
-        const loader = new FBXLoader(loadingManager);
-        
-        loader.load(animPath, (animFbx) => {
-            const animationClip = animFbx.animations[0];
-            
-            if (animationClip) {
-                // Rename the animation to match our expected name
-                animationClip.name = animName;
-                
-                // Create action from the clip using character's mixer
-                const action = character.mixer.clipAction(animationClip);
-                
-                // Store animation data in character
-                character.animations[animName] = {
-                    clip: animationClip,
-                    action: action
-                };
-                
-                // Set default animation properties
-                action.clampWhenFinished = false;
-                action.loop = THREE.LoopRepeat;
-                
-                // Special handling for certain animations
-                if (animName === 'meow') {
-                    action.loop = THREE.LoopOnce;
-                    action.clampWhenFinished = true;
-                }
-                
-                console.log(`Loaded animation: ${animName} for ${character.id}`);
-                resolve(character.animations[animName]);
-            } else {
-                console.warn(`No animation found in ${animPath}`);
-                reject(new Error(`No animation found in ${animPath}`));
-            }
-        }, undefined, (error) => {
-            console.error(`Error loading animation ${animName}:`, error);
-            reject(error);
-        });
-    });
-}
-
-/**
- * Setup animations for a character based on its type
+ * Setup animations for a character using GLTF/GLB animation clips
  * @param {Object} character - The character object
- * @param {Object} loadingManager - Optional loading manager
- * @returns {Promise} Promise that resolves when all animations are loaded
+ * @param {string} characterType - The type of character (player, vendor, cat)
+ * @returns {Promise} Promise that resolves when all animations are set up
  */
-export function setupCharacterAnimations(character, loadingManager) {
-    const animationPromises = [];
-    const characterAnims = ANIMATION_PATHS[character.id];
-    
-    if (!characterAnims) {
-        console.warn(`No animations defined for character type: ${character.id}`);
-        return Promise.resolve();
+export function setupCharacterAnimations(character, characterType) {
+    if (!character || !character.mixer) {
+        return Promise.reject(new Error('Invalid character object'));
     }
     
-    // Load each animation for this character
-    for (const [animName, animPath] of Object.entries(characterAnims)) {
-        const animPromise = loadAnimation(character, animName, animPath, loadingManager);
-        animationPromises.push(animPromise);
+    // Skip if no animation clips are available
+    if (!character.animationClips || character.animationClips.length === 0) {
+        console.warn(`No animation clips found for character: ${characterType}`);
+        return Promise.resolve(character);
     }
     
-    return Promise.all(animationPromises)
-        .then(() => {
-            // Play idle animation by default
-            if (character.animations.idle) {
-                character.animations.idle.action.play();
-                character.currentAnimation = 'idle';
-            }
-            return character;
-        });
+    console.log(`Setting up animations for ${characterType} with ${character.animationClips.length} clips`);
+    
+    // Process all animation clips
+    character.animationClips.forEach(clip => {
+        const clipName = clip.name.toLowerCase();
+        console.log(`Found animation clip: ${clipName}`);
+        
+        // Map standard names
+        let animName = clipName;
+        
+        // Map common animation names to our standard names
+        if (clipName.includes('idle') || clipName.includes('stand')) {
+            animName = 'idle';
+        } else if (clipName.includes('walk')) {
+            animName = 'walking';
+        } else if (clipName.includes('run')) {
+            animName = 'running';
+        } else if (clipName.includes('jump')) {
+            animName = 'jump';
+        } else if (clipName.includes('talk') || clipName.includes('speak')) {
+            animName = 'talking';
+        } else if (clipName.includes('magic') || clipName.includes('cast')) {
+            animName = 'magic';
+        }
+        
+        // Create action from the clip
+        const action = character.mixer.clipAction(clip);
+        
+        // Store animation data
+        character.animations[animName] = {
+            clip: clip,
+            action: action
+        };
+        
+        // Set default properties
+        action.clampWhenFinished = false;
+        action.loop = THREE.LoopRepeat;
+        
+        // Handle special animations
+        if (animName === 'jump' || animName === 'magic') {
+            action.loop = THREE.LoopOnce;
+            action.clampWhenFinished = true;
+        }
+        
+        console.log(`Animation "${animName}" set up for ${character.id}`);
+    });
+    
+    // Play idle animation by default
+    if (character.animations.idle) {
+        character.animations.idle.action.play();
+        character.currentAnimation = 'idle';
+        console.log(`Playing default idle animation for ${character.id}`);
+    } else if (Object.keys(character.animations).length > 0) {
+        // If no idle animation, play the first available animation
+        const firstAnim = Object.keys(character.animations)[0];
+        character.animations[firstAnim].action.play();
+        character.currentAnimation = firstAnim;
+        console.log(`No idle animation found for ${character.id}, playing ${firstAnim} instead`);
+    }
+    
+    return Promise.resolve(character);
 }
 
 /**
@@ -109,6 +89,12 @@ export function setupCharacterAnimations(character, loadingManager) {
  * @param {Function} onFinish - Optional callback when animation completes
  */
 export function playAnimation(character, animName, crossFadeDuration = 0.3, onFinish = null) {
+    // Skip if character is invalid
+    if (!character || !character.animations) {
+        console.warn('Invalid character provided to playAnimation');
+        return;
+    }
+    
     // Skip if animation doesn't exist or is already playing
     if (!character.animations[animName]) {
         console.warn(`Animation ${animName} not found for ${character.id}`);
@@ -163,6 +149,7 @@ export function playAnimation(character, animName, crossFadeDuration = 0.3, onFi
     
     // Update current animation
     character.currentAnimation = animName;
+    console.log(`Playing animation: ${animName} for ${character.id}`);
 }
 
 /**
@@ -170,7 +157,7 @@ export function playAnimation(character, animName, crossFadeDuration = 0.3, onFi
  * @param {Object} character - The character object
  */
 export function stopAllAnimations(character) {
-    if (!character.animations) return;
+    if (!character || !character.animations) return;
     
     Object.values(character.animations).forEach(anim => {
         if (anim.action) {

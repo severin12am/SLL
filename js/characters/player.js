@@ -1,13 +1,36 @@
 import * as THREE from 'three';
-import { MAP_BOUNDARIES } from '../config.js';
+import { MAP_BOUNDARIES, CHARACTER_CONFIG } from '../config.js';
 import { getCharacter, getAllCharacters } from './character-loader.js';
 import { playAnimation } from './animations.js';
+import { getCamera } from '../scene/scene.js';
 
-// Player movement settings
-const MOVE_SPEED = 0.1;
-const RUN_MULTIPLIER = 1.5;
-const TURN_SPEED = 0.03;
-const COLLISION_DISTANCE = 1.0;
+// Default settings if config isn't available
+const DEFAULT_SETTINGS = {
+    moveSpeed: 2.5,
+    runMultiplier: 2.0,
+    turnSpeed: 0.1,
+    jumpForce: 5.0,
+    gravity: -9.8,
+    cameraHeight: 1.6
+};
+
+/**
+ * Get the effective settings for player movement
+ * @returns {Object} Movement settings
+ */
+function getSettings() {
+    if (CHARACTER_CONFIG && CHARACTER_CONFIG.player) {
+        return {
+            moveSpeed: CHARACTER_CONFIG.player.walkSpeed || DEFAULT_SETTINGS.moveSpeed,
+            runMultiplier: CHARACTER_CONFIG.player.runSpeed / CHARACTER_CONFIG.player.walkSpeed || DEFAULT_SETTINGS.runMultiplier,
+            turnSpeed: CHARACTER_CONFIG.player.turnSpeed || DEFAULT_SETTINGS.turnSpeed,
+            jumpForce: CHARACTER_CONFIG.player.jumpHeight || DEFAULT_SETTINGS.jumpForce,
+            gravity: DEFAULT_SETTINGS.gravity,
+            cameraHeight: CHARACTER_CONFIG.player.cameraHeight || DEFAULT_SETTINGS.cameraHeight
+        };
+    }
+    return DEFAULT_SETTINGS;
+}
 
 /**
  * Update player movement based on input state
@@ -18,25 +41,28 @@ const COLLISION_DISTANCE = 1.0;
 export function updatePlayerMovement(player, inputState, deltaTime) {
     if (!player || !player.model) return;
     
-    // Player model and camera references
-    const playerObj = player.model;
-    const camera = player.camera;
+    // Get settings
+    const settings = getSettings();
     
     // Calculate movement direction from key inputs
     let moveX = 0;
     let moveZ = 0;
     
-    if (inputState.keys.forward) moveZ -= 1;
-    if (inputState.keys.backward) moveZ += 1;
-    if (inputState.keys.left) moveX -= 1;
-    if (inputState.keys.right) moveX += 1;
+    if (inputState.forward) moveZ -= 1;
+    if (inputState.backward) moveZ += 1;
+    if (inputState.left) moveX -= 1;
+    if (inputState.right) moveX += 1;
     
     // Check if moving
     const isMoving = moveX !== 0 || moveZ !== 0;
     
     // Play appropriate animation
-    if (isMoving && player.currentAnimation !== 'walking') {
-        playAnimation(player, 'walking');
+    if (isMoving) {
+        if (inputState.run && player.animations.running) {
+            playAnimation(player, 'running');
+        } else if (player.animations.walking) {
+            playAnimation(player, 'walking');
+        }
     } else if (!isMoving && player.currentAnimation !== 'idle' && 
                player.currentAnimation !== 'talking') {
         playAnimation(player, 'idle');
@@ -44,6 +70,10 @@ export function updatePlayerMovement(player, inputState, deltaTime) {
     
     // Calculate movement vector based on camera direction
     if (isMoving) {
+        // Get camera for direction
+        const camera = getCamera();
+        if (!camera) return;
+        
         // Get camera direction (excluding Y rotation)
         const cameraDirection = new THREE.Vector3(0, 0, -1);
         cameraDirection.applyQuaternion(camera.quaternion);
@@ -66,15 +96,15 @@ export function updatePlayerMovement(player, inputState, deltaTime) {
             moveVector.normalize();
             
             // Apply movement speed
-            let currentSpeed = MOVE_SPEED;
-            if (inputState.keys.run) {
-                currentSpeed *= RUN_MULTIPLIER;
+            let speed = settings.moveSpeed * deltaTime;
+            if (inputState.run) {
+                speed *= settings.runMultiplier;
             }
             
-            moveVector.multiplyScalar(currentSpeed);
+            moveVector.multiplyScalar(speed);
             
             // Store current position before movement
-            const oldPosition = playerObj.position.clone();
+            const oldPosition = player.model.position.clone();
             
             // Calculate new position
             const newPosition = oldPosition.clone().add(moveVector);
@@ -95,11 +125,14 @@ export function updatePlayerMovement(player, inputState, deltaTime) {
             
             // Move player if allowed
             if (canMove) {
-                playerObj.position.copy(newPosition);
+                player.model.position.copy(newPosition);
+                
+                // Update player's position property to match model
+                player.position.copy(newPosition);
                 
                 // Rotate player to face movement direction
                 const targetRotation = Math.atan2(moveVector.x, moveVector.z);
-                rotatePlayerTowards(playerObj, targetRotation);
+                rotatePlayerTowards(player.model, targetRotation, settings.turnSpeed);
             }
         }
     }
@@ -112,8 +145,9 @@ export function updatePlayerMovement(player, inputState, deltaTime) {
  * Gradually rotate player to face a target direction
  * @param {THREE.Object3D} playerObj - The player's 3D object
  * @param {number} targetRotation - The target Y rotation in radians
+ * @param {number} turnSpeed - Speed of rotation
  */
-function rotatePlayerTowards(playerObj, targetRotation) {
+function rotatePlayerTowards(playerObj, targetRotation, turnSpeed) {
     // Calculate difference in rotation
     let rotDiff = targetRotation - playerObj.rotation.y;
     
@@ -123,7 +157,7 @@ function rotatePlayerTowards(playerObj, targetRotation) {
     
     // Apply rotation with smooth turning
     if (Math.abs(rotDiff) > 0.01) {
-        playerObj.rotation.y += rotDiff * TURN_SPEED;
+        playerObj.rotation.y += rotDiff * turnSpeed;
     } else {
         playerObj.rotation.y = targetRotation;
     }
@@ -134,14 +168,17 @@ function rotatePlayerTowards(playerObj, targetRotation) {
  * @param {Object} player - The player character object
  */
 function updateCameraPosition(player) {
-    if (!player || !player.camera || !player.model) return;
+    // Get camera
+    const camera = getCamera();
+    if (!camera || !player || !player.model) return;
     
-    // Position camera slightly above player's head
+    // Position camera at player's position
     const playerPos = player.model.position;
-    const offsetY = 1.6; // Camera height above player
+    const settings = getSettings();
     
-    // Update camera position
-    player.camera.position.set(playerPos.x, playerPos.y + offsetY, playerPos.z);
+    // Set camera position to match player
+    // Note: We don't change the camera's rotation here, only position
+    camera.position.set(playerPos.x, playerPos.y + settings.cameraHeight, playerPos.z);
 }
 
 /**
@@ -151,25 +188,26 @@ function updateCameraPosition(player) {
  * @returns {boolean} True if collision would occur
  */
 function checkCollisions(player, newPosition) {
+    // Get all characters
     const characters = getAllCharacters();
+    const collisionDistance = 0.5; // General collision distance
     
-    // Create a bounding sphere around the proposed player position
-    const playerSphere = new THREE.Sphere(
-        newPosition,
-        COLLISION_DISTANCE / 2
-    );
+    // Create a bounding sphere for collision check
+    const playerSphere = new THREE.Sphere(newPosition, collisionDistance);
     
-    // Check collision with each character except player
+    // Check collision with each character
     for (const [id, character] of Object.entries(characters)) {
         if (id !== 'player' && character && character.model) {
-            // Skip if character doesn't have a valid bounding box
-            if (!character.boundingBox) continue;
+            // Get character's collision distance (or use default)
+            const charCollisionDistance = character.collisionDistance || collisionDistance;
             
-            // Create copy of the bounding box to avoid modifying original
-            const charBox = character.boundingBox.clone();
+            // Create a sphere for the character
+            const charPos = character.model.position;
+            const charSphere = new THREE.Sphere(charPos, charCollisionDistance);
             
-            // If bounds intersect, return collision
-            if (charBox.intersectsSphere(playerSphere)) {
+            // Check if spheres intersect
+            if (playerSphere.intersectsSphere(charSphere)) {
+                console.log(`Collision detected with ${id}`);
                 return true;
             }
         }

@@ -1,30 +1,38 @@
-import { getScene, getCamera, registerUpdateFunction } from '../scene/scene.js';
-import { loadPlayer } from '../characters/player.js';
-import { loadCharacters } from '../characters/character-loader.js';
-import { initSpeechRecognition } from '../dialogue/speech-recognition.js';
-import { DEFAULT_LANGUAGE_CONFIG } from '../config.js';
-
 /**
  * Game Manager Module
- * Controls the game state, settings, and core functionality
+ * Central system for managing game state and coordinating subsystems
  */
 
-// Global game state
+import { loadCharacters, updateCharacters, getCharacter, getAllCharacters } from '../characters/character-loader.js';
+import { updatePlayerMovement } from '../characters/player.js';
+import { startDialogue, endDialogue, checkDialogueDistance } from '../dialogue/dialogue-system.js';
+import { setInputEnabled } from '../input/input-manager.js';
+import { initDialogueUI } from '../ui/dialogue-ui.js';
+import { logger } from '../utils/logger.js';
+import { DEFAULT_LANGUAGE_CONFIG } from '../config.js';
+import { waitForVoices } from '../dialogue/text-to-speech.js';
+
+// Game state
 const gameState = {
-    initialized: false,
-    isLoading: true,
-    isPaused: false,
-    isDialogueActive: false,
-    
-    // Game objects
+    // Scene references
     scene: null,
     camera: null,
     renderer: null,
     
-    // Player info
+    // Game status
+    initialized: false,
+    isLoading: true,
+    isPaused: false,
+    
+    // Character tracking
     player: null,
     characters: {},
     activeCharacter: null,
+    
+    // Dialogue state
+    isDialogueActive: false,
+    dialogueCooldown: false,
+    dialogueOptions: [],
     
     // Input state
     input: {
@@ -32,111 +40,156 @@ const gameState = {
         backward: false,
         left: false,
         right: false,
+        run: false,
         jump: false,
         interact: false
     },
     
-    // Game settings
-    settings: {
-        soundEnabled: true,
-        musicVolume: 0.5,
-        sfxVolume: 0.7,
-        dialogueSpeed: 1.0,
-        cameraSensitivity: 1.0
-    },
-    
-    // Language settings
-    languageConfig: {
-        current: 'en',
-        recognitionLang: 'en-US',
-        speechEnabled: true
-    },
-    
-    // Dialogue state
-    dialogueCooldown: false,
-    currentStep: null,
-    dialogueHistory: []
+    // Language configuration
+    languageConfig: { ...DEFAULT_LANGUAGE_CONFIG }
 };
 
 /**
- * Initialize the game state
- * @param {Object} config - Initial configuration
+ * Initialize the game state with scene data
+ * @param {Object} sceneData - Object containing scene, camera, renderer
  */
-export function initGameState(config = {}) {
-    // Apply configuration if provided
-    if (config.scene) gameState.scene = config.scene;
-    if (config.camera) gameState.camera = config.camera;
-    if (config.renderer) gameState.renderer = config.renderer;
+export function initGameState(sceneData) {
+    // Store scene references
+    gameState.scene = sceneData.scene;
+    gameState.camera = sceneData.camera;
+    gameState.renderer = sceneData.renderer;
     
-    // Set up input event listeners
-    setupInputHandlers();
+    // Initialize UI
+    initDialogueUI();
+    
+    // Initialize voices for text-to-speech
+    initVoices();
     
     // Mark as initialized
     gameState.initialized = true;
-    gameState.isLoading = false;
     
-    console.log('Game state initialized');
+    logger.info('Game state initialized', 'GAME');
     
     return gameState;
 }
 
 /**
- * Set up input event handlers
+ * Initialize voices for text-to-speech
  */
-function setupInputHandlers() {
-    // Keyboard event handlers
-    document.addEventListener('keydown', (event) => {
-        updateInputState(event, true);
-    });
-    
-    document.addEventListener('keyup', (event) => {
-        updateInputState(event, false);
-    });
-    
-    // Touch controls - add if needed
+async function initVoices() {
+    try {
+        const voices = await waitForVoices();
+        logger.info(`Loaded ${voices.length} voices for speech synthesis`, 'GAME');
+    } catch (error) {
+        logger.warn('Error loading voices: ' + error.message, 'GAME');
+    }
 }
 
 /**
- * Update input state based on key events
- * @param {KeyboardEvent} event - Keyboard event
- * @param {boolean} isPressed - Whether key is pressed (true) or released (false)
+ * Start the game
  */
-function updateInputState(event, isPressed) {
-    // Skip if in dialogue mode
-    if (gameState.isDialogueActive && !event.key === 'Escape') {
-        return;
+export function startGame() {
+    if (gameState.isLoading) {
+        logger.info('Starting game...', 'GAME');
+        
+        // Hide start screen
+        const startScreen = document.getElementById('start-screen');
+        if (startScreen) {
+            startScreen.style.display = 'none';
+        }
+        
+        // Load characters
+        loadCharacters()
+            .then(characters => {
+                // Store player reference
+                gameState.player = getCharacter('player');
+                
+                // Store all characters
+                const allCharacters = getAllCharacters();
+                gameState.characters = allCharacters;
+                
+                // Register update functions
+                registerUpdate(updateGame);
+                
+                // Game ready
+                gameState.isLoading = false;
+                logger.info('Game started successfully', 'GAME');
+            })
+            .catch(error => {
+                logger.error('Error starting game: ' + error.message, 'GAME');
+                console.error(error);
+            });
+    }
+}
+
+/**
+ * Register a function to update on each frame
+ * @param {Function} updateFunction - Function to call each frame
+ */
+function registerUpdate(updateFunction) {
+    // The scene module handles registering the update function
+    if (window.registerUpdateFunction) {
+        window.registerUpdateFunction(updateFunction);
+    } else {
+        logger.warn('registerUpdateFunction not available in global scope', 'GAME');
+    }
+}
+
+/**
+ * Main game update function (called each frame)
+ * @param {number} deltaTime - Time since last frame in seconds
+ */
+function updateGame(deltaTime) {
+    // Skip if game is paused
+    if (gameState.isPaused) return;
+    
+    // Update characters
+    updateCharacters(deltaTime);
+    
+    // Update player movement if not in dialogue
+    if (gameState.player && !gameState.isDialogueActive) {
+        updatePlayerMovement(gameState.player, gameState.input, deltaTime);
     }
     
-    // Update based on key
-    switch (event.key.toLowerCase()) {
-        case 'w':
-        case 'arrowup':
-            gameState.input.forward = isPressed;
-            break;
-        case 's':
-        case 'arrowdown':
-            gameState.input.backward = isPressed;
-            break;
-        case 'a':
-        case 'arrowleft':
-            gameState.input.left = isPressed;
-            break;
-        case 'd':
-        case 'arrowright':
-            gameState.input.right = isPressed;
-            break;
-        case ' ':
-            gameState.input.jump = isPressed;
-            break;
-        case 'e':
-        case 'enter':
-            gameState.input.interact = isPressed;
-            break;
-        case 'escape':
-            if (isPressed) {
-                togglePause();
+    // Check for interactions
+    checkInteractions();
+    
+    // Check if player walked away from dialogue
+    if (gameState.isDialogueActive) {
+        checkDialogueDistance();
+    }
+}
+
+/**
+ * Check for player interactions with characters
+ */
+function checkInteractions() {
+    // Skip if in dialogue
+    if (gameState.isDialogueActive) return;
+    
+    // Check for interact key press
+    if (gameState.input.interact) {
+        // Reset input to prevent repeated interactions
+        gameState.input.interact = false;
+        
+        // Find nearest character for interaction
+        const player = gameState.player;
+        if (!player) return;
+        
+        // Check each character
+        for (const [id, character] of Object.entries(gameState.characters)) {
+            if (id !== 'player' && character && character.isInteractive) {
+                // Calculate distance
+                const distance = player.position.distanceTo(character.position);
+                
+                // If close enough, interact
+                if (distance <= 2.0) {
+                    logger.info(`Interacting with ${id}`, 'GAME');
+                    startDialogue(character);
+                    break;
+                }
             }
-            break;
+        }
     }
 }
 
@@ -146,51 +199,69 @@ function updateInputState(event, isPressed) {
 export function togglePause() {
     gameState.isPaused = !gameState.isPaused;
     
-    // Show/hide pause menu
+    // Update UI
     const pauseMenu = document.getElementById('pause-menu');
     if (pauseMenu) {
         pauseMenu.style.display = gameState.isPaused ? 'flex' : 'none';
     }
     
-    console.log(`Game ${gameState.isPaused ? 'paused' : 'resumed'}`);
+    // Disable input during pause
+    setInputEnabled(!gameState.isPaused);
+    
+    // If resuming while in dialogue, make sure dialogue ends
+    if (!gameState.isPaused && gameState.isDialogueActive) {
+        endDialogue();
+    }
+    
+    logger.info(`Game ${gameState.isPaused ? 'paused' : 'resumed'}`, 'GAME');
 }
 
 /**
- * Register a character with the game state
+ * Set dialogue active state
+ * @param {boolean} active - Whether dialogue is active
+ */
+export function setDialogueActive(active) {
+    gameState.isDialogueActive = active;
+    
+    // Disable player movement during dialogue
+    if (active) {
+        setInputEnabled(false);
+    } else {
+        setInputEnabled(true);
+    }
+}
+
+/**
+ * Set active character for dialogue
+ * @param {Object} character - The character object
+ */
+export function setActiveCharacter(character) {
+    gameState.activeCharacter = character;
+}
+
+/**
+ * Set dialogue cooldown
+ * @param {boolean} active - Whether cooldown is active
+ * @param {number} time - Cooldown time in ms
+ */
+export function setDialogueCooldown(active, time = 1000) {
+    gameState.dialogueCooldown = active;
+    
+    if (active && time > 0) {
+        setTimeout(() => {
+            gameState.dialogueCooldown = false;
+        }, time);
+    }
+}
+
+/**
+ * Register a character with the game manager
  * @param {string} id - Character ID
  * @param {Object} character - Character object
  */
 export function registerCharacter(id, character) {
     gameState.characters[id] = character;
-    
-    if (id === 'player') {
-        gameState.player = character;
-    }
-    
-    console.log(`Character registered: ${id}`);
-}
-
-/**
- * Get a character by ID
- * @param {string} id - Character ID
- * @returns {Object|null} Character object or null if not found
- */
-export function getCharacter(id) {
-    return gameState.characters[id] || null;
-}
-
-/**
- * Set active character for dialogue
- * @param {string|Object} character - Character ID or object
- */
-export function setActiveCharacter(character) {
-    if (typeof character === 'string') {
-        gameState.activeCharacter = gameState.characters[character] || null;
-    } else {
-        gameState.activeCharacter = character;
-    }
-    
-    console.log(`Active character set: ${gameState.activeCharacter?.id || 'none'}`);
+    logger.debug(`Character registered: ${id}`, 'GAME');
 }
 
 /**
@@ -199,171 +270,4 @@ export function setActiveCharacter(character) {
  */
 export function getGameState() {
     return gameState;
-}
-
-/**
- * Set dialogue active state
- * @param {boolean} isActive - Whether dialogue is active
- */
-export function setDialogueActive(isActive) {
-    gameState.isDialogueActive = isActive;
-    
-    // Disable player movement during dialogue
-    if (isActive) {
-        resetInputState();
-    }
-}
-
-/**
- * Reset input state
- */
-export function resetInputState() {
-    gameState.input.forward = false;
-    gameState.input.backward = false;
-    gameState.input.left = false;
-    gameState.input.right = false;
-    gameState.input.jump = false;
-    gameState.input.interact = false;
-}
-
-/**
- * Set dialogue cooldown
- * @param {boolean} value - Cooldown state
- * @param {number} duration - Cooldown duration in ms
- */
-export function setDialogueCooldown(value, duration = 2000) {
-    gameState.dialogueCooldown = value;
-    
-    if (value && duration > 0) {
-        setTimeout(() => {
-            gameState.dialogueCooldown = false;
-        }, duration);
-    }
-}
-
-/**
- * Set current dialogue step
- * @param {Object} step - Current dialogue step
- */
-export function setCurrentDialogueStep(step) {
-    gameState.currentStep = step;
-    
-    // Add to history if it's a new step
-    if (step) {
-        gameState.dialogueHistory.push({
-            characterId: gameState.activeCharacter?.id,
-            text: step.text,
-            timestamp: Date.now()
-        });
-    }
-}
-
-/**
- * Update game settings
- * @param {Object} newSettings - New settings to apply
- */
-export function updateSettings(newSettings) {
-    gameState.settings = {
-        ...gameState.settings,
-        ...newSettings
-    };
-    
-    console.log('Game settings updated');
-}
-
-/**
- * Initialize the game
- * @returns {Promise<void>}
- */
-async function initGame() {
-    try {
-        // Get scene
-        const scene = getScene();
-        
-        // Load player character
-        await loadPlayer(scene);
-        
-        // Load other characters
-        await loadCharacters(scene);
-        
-        // Initialize speech recognition
-        initSpeechRecognition();
-        
-        console.log('Game initialized');
-        gameState.isGameStarted = true;
-    } catch (error) {
-        console.error('Error initializing game:', error);
-        throw error;
-    }
-}
-
-/**
- * Start the game with selected languages
- */
-export function startGame() {
-    // Get selected languages
-    const motherLanguageSelect = document.getElementById('mother-language');
-    const newLanguageSelect = document.getElementById('new-language');
-    
-    gameState.languageConfig.motherLanguage = motherLanguageSelect.value;
-    gameState.languageConfig.newLanguage = newLanguageSelect.value;
-    
-    // Validate language selection
-    if (gameState.languageConfig.motherLanguage === gameState.languageConfig.newLanguage) {
-        alert('Please select different languages for learning');
-        return;
-    }
-    
-    console.log('Starting game with languages:', gameState.languageConfig);
-    
-    // Hide language selection
-    document.getElementById('language-selection').style.display = 'none';
-    
-    // Initialize the game
-    initGame()
-        .then(() => {
-            console.log('Game started successfully');
-        })
-        .catch(error => {
-            console.error('Failed to start game:', error);
-            alert(`Failed to start game: ${error.message}`);
-        });
-}
-
-/**
- * Reset the dialogue state
- */
-export function resetDialogue() {
-    console.log('Resetting dialogue');
-    
-    // Clear dialogue boxes with animation
-    gameState.dialogueBoxes.forEach(box => {
-        box.classList.add('disappearing');
-        setTimeout(() => box.remove(), 500);
-    });
-    
-    // Reset state
-    gameState.dialogueBoxes = [];
-    gameState.hasStartedDialogue = false;
-    gameState.activeCharacter = null;
-    gameState.currentStep = 0;
-}
-
-/**
- * Reset the dialogue state
- */
-export function resetDialogue() {
-    console.log('Resetting dialogue');
-    
-    // Clear dialogue boxes with animation
-    gameState.dialogueBoxes.forEach(box => {
-        box.classList.add('disappearing');
-        setTimeout(() => box.remove(), 500);
-    });
-    
-    // Reset state
-    gameState.dialogueBoxes = [];
-    gameState.hasStartedDialogue = false;
-    gameState.activeCharacter = null;
-    gameState.currentStep = 0;
 } 

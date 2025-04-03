@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { setupLighting } from './lighting.js';
-import { isMobile } from '../config.js';
+import { createGround, createGridHelper } from './ground.js';
+import { SCENE_CONFIG, DEBUG_CONFIG } from '../config.js';
+import { logger } from '../utils/logger.js';
 
 // Scene variables
 let scene, camera, renderer;
@@ -16,21 +18,52 @@ let updateFunctions = [];
  */
 export async function initScene() {
     return new Promise((resolve) => {
-        // Create scene
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xbfe3dd);
+        logger.info('Initializing Three.js scene', 'SCENE');
         
-        // Create camera
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 1.6, 0);
+        // Create scene with background color from config
+        scene = new THREE.Scene();
+        const backgroundColor = SCENE_CONFIG?.backgroundColor || 0x87CEEB; // Sky blue default
+        scene.background = new THREE.Color(backgroundColor);
+        
+        // Add fog if configured
+        if (SCENE_CONFIG?.fogColor) {
+            scene.fog = new THREE.Fog(
+                SCENE_CONFIG.fogColor,
+                SCENE_CONFIG.fogNear || 10,
+                SCENE_CONFIG.fogFar || 30
+            );
+            logger.debug('Scene fog enabled', 'SCENE');
+        }
+        
+        // Create camera with config or defaults
+        const cameraConfig = SCENE_CONFIG?.CAMERA_CONFIG || {
+            fov: 75,
+            near: 0.1,
+            far: 1000,
+            position: { x: 0, y: 1.6, z: 0 }
+        };
+        
+        camera = new THREE.PerspectiveCamera(
+            cameraConfig.fov,
+            window.innerWidth / window.innerHeight,
+            cameraConfig.near,
+            cameraConfig.far
+        );
+        camera.position.set(
+            cameraConfig.position.x,
+            cameraConfig.position.y,
+            cameraConfig.position.z
+        );
         
         // Create renderer with options
         renderer = new THREE.WebGLRenderer({ 
-            antialias: !isMobile, 
+            antialias: true, 
             powerPreference: 'high-performance' 
         });
-        renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1) : window.devicePixelRatio);
+        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
         // Add renderer to DOM
         document.getElementById('container').appendChild(renderer.domElement);
@@ -42,13 +75,22 @@ export async function initScene() {
         // Set up lighting
         setupLighting(scene);
         
+        // Create ground and grid
+        createGround(scene);
+        
+        // Add grid helper in debug mode
+        if (DEBUG_CONFIG.showColliders) {
+            createGridHelper(scene);
+        }
+        
         // Set up window resize handler
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
+        
+        logger.info('Scene initialization complete', 'SCENE');
         resolve({ scene, camera, renderer });
     });
 }
@@ -59,6 +101,7 @@ export async function initScene() {
  */
 export function registerUpdateFunction(updateFunction) {
     updateFunctions.push(updateFunction);
+    logger.debug(`Update function registered (total: ${updateFunctions.length})`, 'SCENE');
 }
 
 /**
@@ -77,7 +120,8 @@ export function animate() {
         try {
             updateFunction(delta);
         } catch (error) {
-            console.error('Error in update function:', error);
+            logger.error(`Error in update function: ${error.message}`, 'SCENE');
+            console.error(error); // Log full error for stack trace
         }
     });
     

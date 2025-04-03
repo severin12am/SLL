@@ -1,38 +1,36 @@
+/**
+ * Speech Recognition Module
+ * Handles voice input for dialogues
+ */
+
 import { getGameState } from '../game/game-manager.js';
-import { highlightMatchedWords } from '../utils/text-matching.js';
+import { logger } from '../utils/logger.js';
 
 // Speech recognition instance
 let recognition = null;
 let isRecognizing = false;
-
-// Recognition callback function
-let recognitionCallback = null;
-
-// Visual feedback element
+let onResultCallback = null;
 let visualFeedback = null;
 
 /**
  * Initialize speech recognition
- * @returns {boolean} True if speech recognition is supported
+ * @returns {boolean} Whether speech recognition is supported
  */
-export function initSpeechRecognition() {
-    // Check if speech recognition is supported
+function initSpeechRecognition() {
+    // Check if browser supports speech recognition
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        console.warn('Speech recognition not supported in this browser');
+        logger.warn('Speech recognition not supported in this browser', 'SPEECH');
         return false;
     }
     
-    // Create speech recognition instance
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
     
     // Configure recognition
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     
-    // Create visual feedback element
-    createVisualFeedback();
-    
+    logger.info('Speech recognition initialized', 'SPEECH');
     return true;
 }
 
@@ -40,140 +38,147 @@ export function initSpeechRecognition() {
  * Create visual feedback element for speech recognition
  */
 function createVisualFeedback() {
+    // Check if feedback element already exists
+    if (document.getElementById('speech-feedback')) {
+        visualFeedback = document.getElementById('speech-feedback');
+        return;
+    }
+    
     // Create feedback container
     visualFeedback = document.createElement('div');
-    visualFeedback.className = 'speech-feedback';
-    visualFeedback.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 10px 20px;
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white;
-        border-radius: 20px;
-        font-size: 16px;
-        text-align: center;
-        z-index: 1000;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-    `;
+    visualFeedback.id = 'speech-feedback';
+    visualFeedback.style.position = 'fixed';
+    visualFeedback.style.bottom = '20px';
+    visualFeedback.style.left = '50%';
+    visualFeedback.style.transform = 'translateX(-50%)';
+    visualFeedback.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    visualFeedback.style.color = '#fff';
+    visualFeedback.style.padding = '10px 20px';
+    visualFeedback.style.borderRadius = '30px';
+    visualFeedback.style.display = 'none';
+    visualFeedback.style.zIndex = '1000';
+    visualFeedback.style.fontFamily = 'Arial, sans-serif';
+    visualFeedback.style.fontSize = '16px';
+    visualFeedback.style.maxWidth = '80%';
     
     // Add microphone icon
     const micIcon = document.createElement('span');
-    micIcon.innerHTML = '🎤 ';
+    micIcon.innerHTML = '🎤';
+    micIcon.style.marginRight = '10px';
     visualFeedback.appendChild(micIcon);
     
-    // Add text container
-    const textSpan = document.createElement('span');
-    textSpan.className = 'speech-text';
-    textSpan.textContent = 'Listening...';
-    visualFeedback.appendChild(textSpan);
+    // Add text element
+    const textElement = document.createElement('span');
+    textElement.className = 'speech-text';
+    textElement.textContent = 'Listening...';
+    visualFeedback.appendChild(textElement);
     
-    // Add to document
+    // Add to body
     document.body.appendChild(visualFeedback);
 }
 
 /**
- * Start speech recognition with callback
- * @param {Function} callback - Function to call with recognition result
+ * Start speech recognition
+ * @param {Function} callback - Function to call with recognition results
  */
 export function startSpeechRecognition(callback) {
-    if (!recognition) {
-        if (!initSpeechRecognition()) {
-            console.error('Could not initialize speech recognition');
-            return;
-        }
+    // Initialize if not already done
+    if (!recognition && !initSpeechRecognition()) {
+        logger.error('Failed to initialize speech recognition', 'SPEECH');
+        return;
     }
     
+    // Don't start if already recognizing
     if (isRecognizing) {
-        stopSpeechRecognition();
+        logger.debug('Speech recognition already active', 'SPEECH');
+        return;
     }
     
-    recognitionCallback = callback;
+    // Store callback
+    onResultCallback = callback;
     
-    // Set up recognition handlers
-    setupRecognitionHandlers();
-    
-    // Get language from game state
+    // Get language setting from game state
     const gameState = getGameState();
-    if (gameState && gameState.languageConfig && gameState.languageConfig.recognitionLang) {
-        recognition.lang = gameState.languageConfig.recognitionLang;
-    } else {
-        recognition.lang = 'en-US';
-    }
+    const language = gameState.languageConfig?.language || 'en-US';
+    
+    // Set recognition language
+    recognition.lang = language;
+    
+    // Create visual feedback
+    createVisualFeedback();
+    
+    // Setup recognition handlers
+    setupRecognitionHandlers();
     
     // Start recognition
     try {
         recognition.start();
         isRecognizing = true;
         showVisualFeedback();
-        console.log('Speech recognition started');
+        logger.info('Speech recognition started', 'SPEECH');
     } catch (error) {
-        console.error('Error starting speech recognition:', error);
+        logger.error('Error starting speech recognition: ' + error.message, 'SPEECH');
+        isRecognizing = false;
     }
 }
 
 /**
- * Set up recognition event handlers
+ * Set up speech recognition event handlers
  */
 function setupRecognitionHandlers() {
-    recognition.onstart = () => {
-        console.log('Speech recognition service has started');
-    };
-    
+    // Handle results
     recognition.onresult = (event) => {
-        // Get recognition result
-        const result = event.results[0];
-        const transcript = result[0].transcript.trim();
+        let interimTranscript = '';
+        let finalTranscript = '';
         
-        // Update visual feedback with interim results
-        updateVisualFeedback(transcript, !result.isFinal);
-        
-        // If final result, call callback
-        if (result.isFinal && recognitionCallback) {
-            // Slight delay to show the final transcript
-            setTimeout(() => {
-                recognitionCallback(transcript);
-                
-                // Auto-restart recognition for continuous input
-                if (isRecognizing) {
-                    try {
-                        recognition.start();
-                    } catch (error) {
-                        console.warn('Error restarting recognition:', error);
-                    }
-                }
-            }, 500);
-        }
-    };
-    
-    recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        hideVisualFeedback();
-        
-        // Restart on non-fatal errors
-        if (event.error !== 'aborted' && event.error !== 'not-allowed' && isRecognizing) {
-            try {
-                setTimeout(() => recognition.start(), 1000);
-            } catch (error) {
-                console.warn('Could not restart recognition after error:', error);
+        // Process results
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript;
+            } else {
+                interimTranscript += transcript;
             }
         }
+        
+        // Update visual feedback
+        updateVisualFeedback(interimTranscript, finalTranscript);
+        
+        // If we have final results, call the callback
+        if (finalTranscript !== '' && onResultCallback) {
+            logger.debug('Speech recognition final result: ' + finalTranscript, 'SPEECH');
+            onResultCallback(finalTranscript);
+        }
     };
     
+    // Handle errors
+    recognition.onerror = (event) => {
+        logger.error('Speech recognition error: ' + event.error, 'SPEECH');
+        
+        // Special handling for specific errors
+        if (event.error === 'no-speech') {
+            updateVisualFeedback('No speech detected', '');
+        } else if (event.error === 'audio-capture') {
+            updateVisualFeedback('No microphone detected', '');
+        } else if (event.error === 'not-allowed') {
+            updateVisualFeedback('Microphone access denied', '');
+        }
+    };
+    
+    // Handle end of recognition
     recognition.onend = () => {
-        console.log('Speech recognition service disconnected');
+        logger.debug('Speech recognition ended', 'SPEECH');
         
         // If still supposed to be recognizing, restart
         if (isRecognizing) {
             try {
                 recognition.start();
+                logger.debug('Speech recognition restarted', 'SPEECH');
             } catch (error) {
-                console.warn('Could not restart recognition:', error);
-                isRecognizing = false;
+                logger.error('Error restarting speech recognition: ' + error.message, 'SPEECH');
                 hideVisualFeedback();
+                isRecognizing = false;
             }
         } else {
             hideVisualFeedback();
@@ -185,17 +190,19 @@ function setupRecognitionHandlers() {
  * Stop speech recognition
  */
 export function stopSpeechRecognition() {
-    if (recognition && isRecognizing) {
-        try {
-            recognition.stop();
-            console.log('Speech recognition stopped');
-        } catch (error) {
-            console.warn('Error stopping recognition:', error);
-        }
+    if (!recognition || !isRecognizing) {
+        return;
+    }
+    
+    try {
+        recognition.stop();
+        logger.info('Speech recognition stopped', 'SPEECH');
+    } catch (error) {
+        logger.error('Error stopping speech recognition: ' + error.message, 'SPEECH');
     }
     
     isRecognizing = false;
-    recognitionCallback = null;
+    onResultCallback = null;
     hideVisualFeedback();
 }
 
@@ -204,7 +211,7 @@ export function stopSpeechRecognition() {
  */
 function showVisualFeedback() {
     if (visualFeedback) {
-        visualFeedback.style.opacity = '1';
+        visualFeedback.style.display = 'block';
     }
 }
 
@@ -213,40 +220,29 @@ function showVisualFeedback() {
  */
 function hideVisualFeedback() {
     if (visualFeedback) {
-        visualFeedback.style.opacity = '0';
+        visualFeedback.style.display = 'none';
     }
 }
 
 /**
- * Update visual feedback with current transcript
- * @param {string} text - Current recognized text
- * @param {boolean} interim - Whether this is an interim result
+ * Update visual feedback with current recognition results
+ * @param {string} interim - Interim recognition results
+ * @param {string} final - Final recognition results
  */
-function updateVisualFeedback(text, interim) {
+function updateVisualFeedback(interim, final) {
     if (!visualFeedback) return;
     
-    const textSpan = visualFeedback.querySelector('.speech-text');
-    if (!textSpan) return;
+    const textElement = visualFeedback.querySelector('.speech-text');
+    if (!textElement) return;
     
-    // Get active dialogue options for highlighting
+    // Show final or interim text
+    const displayText = final || interim || 'Listening...';
+    textElement.textContent = displayText;
+    
+    // Highlight matching words
     const gameState = getGameState();
-    let options = [];
-    
-    if (gameState.activeCharacter && gameState.currentStep) {
-        const charId = gameState.activeCharacter.id;
-        const dialogueElement = document.querySelector(`.dialogue-box[data-character="${charId}"]`);
-        
-        if (dialogueElement) {
-            const optionElements = dialogueElement.querySelectorAll('.dialogue-option');
-            options = Array.from(optionElements).map(el => el.textContent);
-        }
-    }
-    
-    // Highlight matching words if options are available
-    if (options.length > 0) {
-        const highlightedText = highlightMatchedWords(text, options);
-        textSpan.innerHTML = interim ? `${highlightedText}...` : highlightedText;
-    } else {
-        textSpan.textContent = interim ? `${text}...` : text;
+    if (gameState.dialogueOptions && gameState.dialogueOptions.length > 0) {
+        // Implementation for highlighting words that match dialogue options
+        // This would need to be customized based on your dialogue UI approach
     }
 } 
