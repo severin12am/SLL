@@ -1265,18 +1265,10 @@
                     let closestCharacter = null;
                     let closestDistance = Infinity;
 
-                    // Debug vendor position (only log if we're checking distances)
-                    if (vendor) {
-                        console.log("Vendor position:", vendor.position);
-                        console.log("Player position:", player.position);
-                        const vendorDistance = calculateDistance(player.position, vendor.position);
-                        console.log("Distance to vendor:", vendorDistance);
-                    }
-
                     Object.values(characters).forEach(character => {
-                        if (!character) return;
+                        if (!character) return; // Skip if character model not loaded yet
                         const distance = calculateDistance(player.position, character.position);
-                        console.log("Distance to character:", character.characterId, distance);
+                        console.log("Distance to character:", character.characterId, distance); // Log distance for all characters
                         if (distance < DIALOGUE_DISTANCE && distance < closestDistance) {
                             closestCharacter = character;
                             closestDistance = distance;
