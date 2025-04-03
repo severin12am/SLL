@@ -1,0 +1,25 @@
+{
+  "name": "three-js-dialogue-game",
+  "version": "1.0.0",
+  "description": "An interactive 3D game with character dialogue using Three.js",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server -c-1 -p 8080",
+    "dev": "http-server -c-1 -p 8080 -o"
+  },
+  "keywords": [
+    "three.js",
+    "3D",
+    "game",
+    "dialogue",
+    "speech recognition"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.149.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+} 
