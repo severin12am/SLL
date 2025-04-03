@@ -1656,9 +1656,19 @@
                     dialogueBoxes.forEach(box => box.remove());
                     dialogueBoxes = [];
 
+                    // Wait for vendor to be loaded
+                    if (!vendor) {
+                        console.error("Vendor not loaded yet");
+                        return;
+                    }
+
                     // Get vendor's character ID
-                    const vendorId = vendor?.characterId;
+                    const vendorId = vendor.characterId;
                     console.log("Initializing game with vendor ID:", vendorId);
+
+                    if (!vendorId) {
+                        throw new Error("Vendor character ID is undefined");
+                    }
 
                     // Fetch dialogue data for the vendor
                     await fetchDialogueData(vendorId, languageConfig.motherLanguage, languageConfig.newLanguage);
@@ -1996,6 +2006,16 @@
                     popCatAnimation.reset();
                     popCatAnimation.play();
                 }
+            }
+
+            // Add this function after the existing language-related functions
+            function updateLanguage(langCode, type) {
+                if (type === 'mother') {
+                    languageConfig.motherLanguage = langCode;
+                } else if (type === 'new') {
+                    languageConfig.newLanguage = langCode;
+                }
+                console.log("Updated language config:", languageConfig);
             }
         </script>
     </body>
