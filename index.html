@@ -1231,6 +1231,7 @@
 
             // Update the updatePlayer function to include cooldown for distance checks
             function updatePlayer(delta) {
+                // console.log("[Mobile Debug] updatePlayer running"); // Optional: uncomment if needed, can be spammy
                 if (!player) return;
                 if (isNaN(delta) || delta <= 0) return;
 
@@ -1259,17 +1260,23 @@
                 // Only check distances if cooldown has passed
                 const currentTime = Date.now();
                 if (currentTime - lastDistanceCheck >= DISTANCE_CHECK_COOLDOWN) {
+                    console.log("[Mobile Debug] Passed distance check cooldown");
                     lastDistanceCheck = currentTime;
 
                     // Check distances to all characters
                     let closestCharacter = null;
                     let closestDistance = Infinity;
+                    console.log("[Mobile Debug] Checking distances to characters:", Object.keys(characters));
 
                     Object.values(characters).forEach(character => {
-                        if (!character) return; // Skip if character model not loaded yet
+                        if (!character) {
+                            console.log("[Mobile Debug] Skipping null character");
+                            return; 
+                        }
                         const distance = calculateDistance(player.position, character.position);
-                        console.log("Distance to character:", character.characterId, distance); // Log distance for all characters
+                        console.log(`[Mobile Debug] Distance to ${character.characterId}: ${distance}`); 
                         if (distance < DIALOGUE_DISTANCE && distance < closestDistance) {
+                            console.log(`[Mobile Debug] New closest character found: ${character.characterId} at distance ${distance}`);
                             closestCharacter = character;
                             closestDistance = distance;
                         }
@@ -1277,16 +1284,23 @@
 
                     // If player moves too far from active character, reset dialogue
                     if (activeCharacter && calculateDistance(player.position, activeCharacter.position) > DIALOGUE_RESET_DISTANCE) {
+                        console.log("[Mobile Debug] Player moved too far, resetting dialogue");
                         if (hasStartedDialogue && !resetCooldown) {
                             resetDialogue();
                         }
                     }
                     // If player is close to a character and dialogue hasn't started
                     else if (closestCharacter && !hasStartedDialogue && !resetCooldown) {
-                        console.log("Starting dialogue with closest character:", closestCharacter.characterId);
-                        startDialogueWithCharacter(closestCharacter);
+                        console.log(`[Mobile Debug] Conditions met! Attempting to start dialogue with ${closestCharacter.characterId}`);
+                        startDialogueWithCharacter(closestCharacter); 
+                    } else {
+                        // Log why dialogue isn't starting
+                        if (!closestCharacter) console.log("[Mobile Debug] Dialogue not starting: No character close enough.");
+                        if (hasStartedDialogue) console.log("[Mobile Debug] Dialogue not starting: Dialogue already active.");
+                        if (resetCooldown) console.log("[Mobile Debug] Dialogue not starting: In reset cooldown.");
                     }
-                }
+                } 
+                // else { console.log("[Mobile Debug] Still in distance check cooldown"); } // Optional: uncomment if needed
             }
 
             // Update the startDialogueWithCharacter function to properly handle vendor
