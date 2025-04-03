@@ -1372,20 +1372,116 @@
                 }
             }
 
-            // Add helper function to reset dialogue
+            // Update initGame to ensure we're starting with a clean state
+            async function initGame() {
+                // Clear any existing dialogue boxes first
+                clearAllDialogueBoxes();
+                hideExplanation(); // Ensure explanation box is hidden at game start
+                
+                if (!recognition) {
+                    console.error("Speech recognition not initialized");
+                    createDialogueBox("Speech recognition is not available. Please use a supported browser like Chrome, Edge, or Safari.");
+                    return;
+                }
+                
+                // Check for HTTPS
+                if (window.location.protocol !== 'https:') {
+                    console.error("Site must be served over HTTPS for speech recognition to work");
+                    createDialogueBox("This site requires HTTPS for speech recognition to work. Please use a secure connection.");
+                    return;
+                }
+                
+                try {
+                    // Reset state completely
+                    currentStep = 0;
+                    isRecognizing = false;
+                    hasStartedDialogue = false;
+                    lastCharacterId = null;
+                    activeCharacter = null;
+                    dialogueStartCooldown = false;
+                    resetCooldown = false;
+                    lastDistanceCheck = 0;
+                
+                    // Wait for vendor to be loaded
+                    if (!vendor) {
+                        console.error("Vendor not loaded yet");
+                        return;
+                    }
+
+                    // Get vendor's character ID
+                    const vendorId = vendor.characterId;
+                    console.log("Initializing game with vendor ID:", vendorId);
+
+                    if (!vendorId) {
+                        throw new Error("Vendor character ID is undefined");
+                    }
+
+                    // Fetch dialogue data for vendor - but don't display yet
+                    await fetchDialogueData(vendorId, languageConfig.motherLanguage, languageConfig.newLanguage);
+
+                    // Verify that dialogue data was loaded successfully
+                    if (!dialogueSteps[languageConfig.newLanguage] || !dialogueSteps[languageConfig.newLanguage].length ||
+                        !dialogueSteps[languageConfig.motherLanguage] || !dialogueSteps[languageConfig.motherLanguage].length) {
+                        throw new Error("Failed to load dialogue data");
+                    }
+                
+                    // Set up speech recognition for the new language
+                    recognition.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
+                                     languageConfig.newLanguage === 'es' ? 'es-ES' : 
+                                     languageConfig.newLanguage === 'ru' ? 'ru-RU' :
+                                     languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
+                
+                    try {
+                        // Request microphone permission
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        console.log("Microphone access granted, stream active:", stream.active);
+                        
+                        // Close the stream right away - we'll start recognition only when needed
+                        stream.getTracks().forEach(track => track.stop());
+                        
+                    } catch (permissionError) {
+                        console.error("Microphone permission error:", permissionError);
+                        createDialogueBox("Please allow microphone access to use speech recognition. Click the microphone icon in your browser's address bar and reload the page.");
+                        return;
+                    }
+                } catch (err) {
+                    console.error("Error initializing game:", err);
+                    createDialogueBox(`Error: ${err.message}`);
+                }
+            }
+
+            // Add a function to clear all dialogue boxes
+            function clearAllDialogueBoxes() {
+                dialogueBoxes.forEach(box => box.remove());
+                dialogueBoxes = [];
+                dialogueBoxesElement.innerHTML = ''; // Make sure the container is empty
+            }
+            
+            // Update the resetDialogue function to be more thorough
             function resetDialogue() {
+                console.log("Resetting dialogue");
                 resetCooldown = true;
-                lastCharacterId = null;  // Reset the last character ID
+                lastCharacterId = null;
+                activeCharacter = null;
+                hasStartedDialogue = false;
+                currentStep = 0;
+                
                 hideExplanation(); // Hide explanation box when dialogue resets
                 
                 if (recognition) {
-                    recognition.abort();
+                    try {
+                        recognition.abort();
+                    } catch (e) {
+                        console.error("Error aborting recognition:", e);
+                    }
                     isRecognizing = false;
                 }
+                
                 if (speechSynthesis.speaking) {
                     speechSynthesis.cancel();
                 }
                 
+                // Remove all dialogue boxes with animation
                 dialogueBoxes.forEach((box) => {
                     box.style.opacity = '0';
                     box.style.transform = 'translateY(20px)';
@@ -1393,9 +1489,6 @@
                 });
                 
                 dialogueBoxes = [];
-                hasStartedDialogue = false;
-                currentStep = 0;
-                activeCharacter = null;
                 
                 setTimeout(() => {
                     resetCooldown = false;
@@ -1679,87 +1772,14 @@
             // Remove the old event listener
             document.getElementById('start-game').removeEventListener('click', () => {});
 
-            // Make initGame async
-            async function initGame() {
-                hideExplanation(); // Ensure explanation box is hidden at game start
-                if (!recognition) {
-                    console.error("Speech recognition not initialized");
-                    createDialogueBox("Speech recognition is not available. Please use a supported browser like Chrome, Edge, or Safari.");
-                    return;
-                }
-                
-                // Check for HTTPS
-                if (window.location.protocol !== 'https:') {
-                    console.error("Site must be served over HTTPS for speech recognition to work");
-                    createDialogueBox("This site requires HTTPS for speech recognition to work. Please use a secure connection.");
-                    return;
-                }
-                
-                try {
-                    // Reset state
-                    currentStep = 0;
-                    isRecognizing = false;
-                    hasStartedDialogue = false;
-                    dialogueBoxes.forEach(box => box.remove());
-                    dialogueBoxes = [];
-
-                    // Wait for vendor to be loaded
-                    if (!vendor) {
-                        console.error("Vendor not loaded yet");
-                        return;
-                    }
-
-                    // Get vendor's character ID
-                    const vendorId = vendor.characterId;
-                    console.log("Initializing game with vendor ID:", vendorId);
-
-                    if (!vendorId) {
-                        throw new Error("Vendor character ID is undefined");
-                    }
-
-                    // Fetch dialogue data for the vendor
-                    await fetchDialogueData(vendorId, languageConfig.motherLanguage, languageConfig.newLanguage);
-
-                    // Verify that dialogue data was loaded successfully
-                    if (!dialogueSteps[languageConfig.newLanguage] || !dialogueSteps[languageConfig.newLanguage].length ||
-                        !dialogueSteps[languageConfig.motherLanguage] || !dialogueSteps[languageConfig.motherLanguage].length) {
-                        throw new Error("Failed to load dialogue data");
-                    }
-                
-                    // Set up speech recognition for the new language
-                    recognition.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
-                                     languageConfig.newLanguage === 'es' ? 'es-ES' : 
-                                     languageConfig.newLanguage === 'ru' ? 'ru-RU' :
-                                     languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
-                
-                    try {
-                        // Request microphone permission
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        console.log("Microphone access granted, stream active:", stream.active);
-                        
-                        // Start recognition only if we have microphone access
-                        if (stream.active) {
-                            isRecognizing = true;
-                            recognition.start();
-                        } else {
-                            throw new Error("Microphone stream is not active");
-                        }
-                    } catch (permissionError) {
-                        console.error("Microphone permission error:", permissionError);
-                        createDialogueBox("Please allow microphone access to use speech recognition. Click the microphone icon in your browser's address bar and reload the page.");
-                        return;
-                    }
-                } catch (err) {
-                    console.error("Error initializing game:", err);
-                    createDialogueBox(`Error: ${err.message}`);
-                }
-            }
-
             window.onresize = function () {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             };
+
+            // Helper vector for screen positioning
+            const screenPositionVector = new THREE.Vector3();
 
             function animate() {
                 try {
@@ -1868,10 +1888,10 @@
                 
                 // Set language based on what user is learning
                 recognition.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
-                                  languageConfig.newLanguage === 'es' ? 'es-ES' : 
-                                  languageConfig.newLanguage === 'ru' ? 'ru-RU' :
-                                  languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
-                                  
+                                languageConfig.newLanguage === 'es' ? 'es-ES' : 
+                                languageConfig.newLanguage === 'ru' ? 'ru-RU' :
+                                languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
+                                
                 console.log("Recognition initialized with language:", recognition.lang);
             }
 
