@@ -59,16 +59,15 @@
 
             .dialogue-box {
                 margin: 5px 0;
-                padding: 10px 15px;
+                padding: 10px 15px; /* Corrected padding */
                 background: rgba(255, 248, 220, 0.95);
                 border-radius: 5px;
                 transition: transform 0.5s ease;
                 flex-grow: 1;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                line-height: 1.2;
+                white-space: normal; /* Allow text wrapping */
+                line-height: 1.3;
                 pointer-events: auto; /* Ensure dialogue boxes receive touch events */
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
 
             /* Style for individual words */
@@ -77,10 +76,6 @@
                 display: inline-block; /* Needed for potential hover effects */
                 margin-right: 1px; /* Small space */
                 transition: background-color 0.2s ease;
-            }
-
-            .word:hover {
-                background-color: rgba(0, 102, 204, 0.1); /* Subtle hover */
             }
 
             .dialogue-box:hover {
@@ -150,18 +145,18 @@
             }
 
             .dialogue-container.position-1 { transform: translateY(0); }
-            .dialogue-container.position-2 { transform: translateY(-40px); } /* Reduced from -50px */
-            .dialogue-container.position-3 { transform: translateY(-80px); } /* Reduced from -100px */
-            .dialogue-container.position-4 { transform: translateY(-120px); } /* Reduced from -150px */
-            .dialogue-container.position-5 { transform: translateY(-160px); } /* Reduced from -200px */
-            .dialogue-container.position-6 { transform: translateY(-200px); } /* Reduced from -250px */
-            .dialogue-container.position-7 { transform: translateY(-240px); } /* Reduced from -300px */
-            .dialogue-container.position-8 { transform: translateY(-280px); } /* Reduced from -350px */
-            .dialogue-container.position-9 { transform: translateY(-320px); } /* Reduced from -400px */
-            .dialogue-container.position-10 { transform: translateY(-360px); } /* Reduced from -450px */
+            .dialogue-container.position-2 { transform: translateY(-45px); }
+            .dialogue-container.position-3 { transform: translateY(-90px); }
+            .dialogue-container.position-4 { transform: translateY(-135px); }
+            .dialogue-container.position-5 { transform: translateY(-180px); }
+            .dialogue-container.position-6 { transform: translateY(-225px); }
+            .dialogue-container.position-7 { transform: translateY(-270px); }
+            .dialogue-container.position-8 { transform: translateY(-315px); }
+            .dialogue-container.position-9 { transform: translateY(-360px); }
+            .dialogue-container.position-10 { transform: translateY(-405px); }
 
             .highlighted {
-                color: #000000; /* Change from #0066cc to black */
+                color: #000000; /* Default color */
             }
 
             .instruction {
@@ -297,6 +292,7 @@
                 transition: transform 0.2s ease, background-color 0.2s ease;
                 margin-left: 10px;
                 position: relative;
+                pointer-events: auto;
             }
 
             .speaker-button:hover {
@@ -320,17 +316,20 @@
                 bottom: 20px;
                 left: 50%;
                 transform: translateX(-50%);
-                width: 240px;
-                height: 80px;
+                width: 120px; /* Smaller width for single button */
+                height: 40px;
                 z-index: 1000;
                 display: none;
-                pointer-events: auto; /* Ensure controls receive touch events */
+                pointer-events: auto;
             }
 
-            .d-pad-button {
+            .forward-button {
                 position: absolute;
+                width: 100%;
+                height: 100%;
                 background: rgba(255, 255, 255, 0.7);
                 border: 1px solid rgba(0, 0, 0, 0.2);
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -339,43 +338,13 @@
                 user-select: none;
                 -webkit-user-select: none;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                pointer-events: auto; /* Ensure buttons receive touch events */
+                pointer-events: auto;
             }
 
-            .d-pad-button:active {
+            .forward-button:active {
                 background: rgba(200, 200, 200, 0.8);
                 transform: translateY(1px);
                 box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-            }
-
-            #up-btn {
-                top: 0;
-                left: 60px;
-                width: 120px;
-                height: 35px; /* Reduced height */
-                border-radius: 8px 8px 0 0;
-            }
-
-            #down-btn {
-                bottom: 0;
-                left: 60px;
-                width: 120px;
-                height: 35px; /* Reduced height */
-                border-radius: 0 0 8px 8px;
-            }
-
-            #left-btn {
-                left: 0;
-                height: 80px; /* Full height but reduced */
-                width: 50px; /* Slightly narrower */
-                border-radius: 8px;
-            }
-
-            #right-btn {
-                right: 0;
-                height: 80px; /* Full height but reduced */
-                width: 50px; /* Slightly narrower */
-                border-radius: 8px;
             }
 
             /* Show mobile controls on touch devices and small screens */
@@ -469,12 +438,7 @@
 
         <!-- Mobile Controls -->
         <div id="mobile-controls">
-            <div class="d-pad">
-                <div id="up-btn" class="d-pad-button">⬆️</div>
-                <div id="down-btn" class="d-pad-button">⬇️</div>
-                <div id="left-btn" class="d-pad-button">⬅️</div>
-                <div id="right-btn" class="d-pad-button">➡️</div>
-            </div>
+            <div id="forward-btn" class="forward-button">⬆️</div>
         </div>
 
         <!-- Move script tags outside of body to avoid CSP inline script issues -->
@@ -618,13 +582,31 @@
                                             scene.add(model);
                                             registerCollidableObject(model); // Register model for collision detection
                                             
-                                            if (character.name === 'Market Vendor') {
-                                                vendor = model;
-                                                characters.vendor = model;
-                                                console.log("Vendor loaded with ID:", character.id, vendor);
+                                            // Store reference in characters object based on name
+                                            // Make sure names match exactly what's in your Supabase table
+                                            switch (character.name) {
+                                                case 'Market Vendor':
+                                                    vendor = model; // Keep specific vendor reference if needed elsewhere
+                                                    characters.vendor = model;
+                                                    console.log("Vendor loaded with ID:", character.id, vendor);
+                                                    break;
+                                                case 'Robot':
+                                                    characters.robot = model;
+                                                    console.log("Robot loaded with ID:", character.id, model);
+                                                    break;
+                                                case 'Parrot':
+                                                    characters.parrot = model;
+                                                    console.log("Parrot loaded with ID:", character.id, model);
+                                                    break;
+                                                case 'Man':
+                                                    characters.man = model;
+                                                    console.log("Man loaded with ID:", character.id, model);
+                                                    break;
+                                                default:
+                                                    console.warn("Loaded character not specifically handled:", character.name);
+                                                    // Optionally store other characters too:
+                                                    // characters[character.name.toLowerCase().replace(' ', '')] = model;
                                             }
-                                            // Also store other characters if needed, e.g. based on name or ID
-                                            // characters[character.name] = model; // Example
                                             
                                             resolveLoad(model); // Resolve the promise for this character
                                         },
@@ -680,6 +662,12 @@
                 try {
                     console.log("Fetching dialogue data for character:", characterId);
                     
+                    // Clear existing dialogue data
+                    dialogueSteps[newLang] = [];
+                    dialogueSteps[motherLang] = [];
+                    vendorResponses[newLang] = [];
+                    vendorResponses[motherLang] = [];
+                    
                     // Fetch scenario for the specific character
                     const { data: scenarios, error: scenarioError } = await supabase
                         .from('dialogue_scenarios')
@@ -723,12 +711,6 @@
                         throw stepsError;
                     }
 
-                    // Clear existing dialogue data
-                    dialogueSteps[newLang] = [];
-                    dialogueSteps[motherLang] = [];
-                    vendorResponses[newLang] = [];
-                    vendorResponses[motherLang] = [];
-
                     // Process steps
                     steps.forEach(step => {
                         const newLangTranslation = step.translations.find(t => t.language.code === newLang);
@@ -745,11 +727,13 @@
                         }
                     });
 
-                    console.log("Loaded dialogue data for character:", characterId, {
-                        dialogueSteps: dialogueSteps[newLang].length,
-                        vendorResponses: vendorResponses[newLang].length
+                    console.log("Loaded dialogue data:", {
+                        character: characterId,
+                        userDialogues: dialogueSteps[newLang].length,
+                        characterResponses: vendorResponses[newLang].length
                     });
 
+                    return true;
                 } catch (error) {
                     console.error("Error in fetchDialogueData:", error);
                     throw error;
@@ -794,7 +778,10 @@
             let activeCharacter = null;
             let characters = {
                 vendor: null,
-                popCat: null
+                popCat: null,
+                robot: null, // Add placeholder for Robot
+                parrot: null, // Add placeholder for Parrot
+                man: null    // Add placeholder for Man
             };
 
             const DIALOGUE_DISTANCE = 2;
@@ -894,10 +881,7 @@
 
             // Mobile Controls Setup
             const mobileControls = document.getElementById('mobile-controls');
-            const upBtn = document.getElementById('up-btn');
-            const downBtn = document.getElementById('down-btn');
-            const leftBtn = document.getElementById('left-btn');
-            const rightBtn = document.getElementById('right-btn');
+            const forwardBtn = document.getElementById('forward-btn');
 
             // Function to check if device is mobile/touch-enabled
             function isMobileDevice() {
@@ -921,42 +905,32 @@
                         }
                     }, { passive: false });
 
-                    // Handle touch events for d-pad buttons
-                    const buttons = {
-                        'up-btn': 'forward',
-                        'down-btn': 'backward',
-                        'left-btn': 'left',
-                        'right-btn': 'right'
-                    };
+                    // Handle touch events for forward button
+                    if (forwardBtn) {
+                        // Touch events
+                        forwardBtn.addEventListener('touchstart', (e) => {
+                            e.preventDefault();
+                            keys.forward = true;
+                        }, { passive: false });
 
-                    Object.entries(buttons).forEach(([btnId, direction]) => {
-                        const btn = document.getElementById(btnId);
-                        if (btn) {
-                            // Touch events
-                            btn.addEventListener('touchstart', (e) => {
-                                e.preventDefault();
-                                keys[direction] = true;
-                            }, { passive: false });
+                        forwardBtn.addEventListener('touchend', (e) => {
+                            e.preventDefault();
+                            keys.forward = false;
+                        }, { passive: false });
 
-                            btn.addEventListener('touchend', (e) => {
-                                e.preventDefault();
-                                keys[direction] = false;
-                            }, { passive: false });
+                        // Mouse events (for testing on desktop)
+                        forwardBtn.addEventListener('mousedown', () => {
+                            keys.forward = true;
+                        });
 
-                            // Mouse events (for testing on desktop)
-                            btn.addEventListener('mousedown', () => {
-                                keys[direction] = true;
-                            });
+                        forwardBtn.addEventListener('mouseup', () => {
+                            keys.forward = false;
+                        });
 
-                            btn.addEventListener('mouseup', () => {
-                                keys[direction] = false;
-                            });
-
-                            btn.addEventListener('mouseleave', () => {
-                                keys[direction] = false;
-                            });
-                        }
-                    });
+                        forwardBtn.addEventListener('mouseleave', () => {
+                            keys.forward = false;
+                        });
+                    }
                 }
             }
 
@@ -1188,60 +1162,45 @@
                 });
             }
 
+            // Word highlighting based on speech recognition
             function highlightWords(spokenText) {
                 try {
-                const currentDialogue = dialogueSteps[languageConfig.newLanguage][currentStep];
+                    const currentDialogue = dialogueSteps[languageConfig.newLanguage][currentStep];
                     if (!currentDialogue) {
                         console.error('No dialogue found for current step:', currentStep);
                         return false;
                     }
                     
-                    // Function to clean text for comparison
-                    const cleanTextForComparison = (text) => {
+                    // Clean text for comparison
+                    const cleanText = (text) => {
                         return text
-                            .replace(/[.,!?¿¡،؟'"]/g, '')  // Remove all punctuation including quotes
-                    .replace(/\s+/g, ' ')        // Normalize spaces
-                    .trim()
+                            .replace(/[.,!?¿¡،؟'"]/g, '')  // Remove punctuation
+                            .replace(/\s+/g, ' ')          // Normalize spaces
+                            .trim()
                             .toLowerCase();
                     };
                     
-                    // Get the text to compare against based on language
-                    let textToCompare;
+                    // Get the text to compare against
+                    let expectedText = currentDialogue.text;
                     if (languageConfig.newLanguage === 'ar') {
-                        textToCompare = currentDialogue.phonetic_text_ar_recognition || currentDialogue.text;
-                    } else {
-                        textToCompare = currentDialogue.text;
+                        expectedText = currentDialogue.phonetic_text_ar_recognition || currentDialogue.text;
                     }
                     
                     // Clean texts for comparison
-                    const cleanedExpectedText = cleanTextForComparison(textToCompare);
-                    const cleanedSpokenText = cleanTextForComparison(spokenText);
+                    const cleanedExpectedText = cleanText(expectedText);
+                    const cleanedSpokenText = cleanText(spokenText);
                     
-                    console.log('Comparing texts:', {
+                    console.log('Comparing:', {
                         expected: cleanedExpectedText,
-                        spoken: cleanedSpokenText,
-                        originalText: currentDialogue.text
+                        spoken: cleanedSpokenText
                     });
 
                     // Get the current dialogue box
                     const currentBox = dialogueBoxes[dialogueBoxes.length - 1];
-                    if (!currentBox) {
-                        console.error('No current dialogue box found');
-                        return false;
-                    }
+                    if (!currentBox) return false;
 
-                    const mainText = currentBox.querySelector('.dialogue-box .highlighted');
-                    if (!mainText) {
-                        console.error('No highlighted text element found');
-                        return false;
-                    }
-
-                    // Get all word spans
-                    const wordSpans = mainText.querySelectorAll('.word');
-                    if (!wordSpans.length) {
-                        console.error('No word spans found');
-                        return false;
-                    }
+                    const wordSpans = currentBox.querySelectorAll('.dialogue-box .word');
+                    if (!wordSpans.length) return false;
 
                     // Split both texts into words
                     const expectedWords = cleanedExpectedText.split(' ');
@@ -1252,40 +1211,35 @@
 
                     // Process each expected word
                     expectedWords.forEach((expectedWord, index) => {
-                        const cleanedExpectedWord = cleanTextForComparison(expectedWord);
                         const wordSpan = wordSpans[index];
-                        
                         if (!wordSpan) return;
                         
-                        totalChars += cleanedExpectedWord.length;
+                        const cleanExpectedWord = cleanText(expectedWord);
+                        totalChars += cleanExpectedWord.length;
                         
                         // Find best match among spoken words
                         let bestMatchScore = 0;
                         spokenWords.forEach(spokenWord => {
-                            const cleanedSpokenWord = cleanTextForComparison(spokenWord);
-                            const score = calculateMatchScore(cleanedExpectedWord, cleanedSpokenWord);
+                            const cleanSpokenWord = cleanText(spokenWord);
+                            const score = calculateMatchScore(cleanExpectedWord, cleanSpokenWord);
                             bestMatchScore = Math.max(bestMatchScore, score);
                         });
 
-                        // Update word color based on match score
+                        // Update word color based on match score (blue if matched)
                         if (bestMatchScore > 0.7) {
                             wordSpan.style.color = '#0066cc';
-                            matchedChars += cleanedExpectedWord.length;
+                            matchedChars += cleanExpectedWord.length;
                         } else {
                             wordSpan.style.color = '#000000';
                         }
                     });
 
                     // Calculate overall match percentage
-                    const matchPercentage = (matchedChars / totalChars) * 100;
-                    console.log('Match percentage:', matchPercentage);
+                    const matchPercentage = totalChars > 0 ? (matchedChars / totalChars) * 100 : 0;
+                    console.log('Match percentage:', matchPercentage.toFixed(1) + '%');
                     
-                    // Return true if overall match is >= 70%
-                    const isMatch = matchPercentage >= 70;
-                    if (isMatch) {
-                        console.log('Match successful, proceeding with dialogue');
-                    }
-                    return isMatch;
+                    // Return true if overall match is >= 60% (adjusted from 70%)
+                    return matchPercentage >= 60;
                 } catch (error) {
                     console.error('Error in highlightWords:', error);
                     return false;
@@ -1307,14 +1261,12 @@
                 return matchCount / maxLength;
             }
 
-            // Update the updatePlayer function to include cooldown for distance checks
+            // Update the updatePlayer function to focus on core functionality
             function updatePlayer(delta) {
-                // console.log("[Mobile Debug] updatePlayer running"); // Optional: uncomment if needed, can be spammy
                 if (!player) return;
                 if (isNaN(delta) || delta <= 0) return;
 
-                velocity.set(0, 0, 0);
-
+                // Calculate player movement
                 const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
                 const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
 
@@ -1331,99 +1283,49 @@
                 if (newPosition.z < MAP_BOUNDARIES.minZ) newPosition.z = MAP_BOUNDARIES.minZ;
                 if (newPosition.z > MAP_BOUNDARIES.maxZ) newPosition.z = MAP_BOUNDARIES.maxZ;
 
-                // Update position
+                // Update player position
                 player.position.copy(newPosition);
                 camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
 
                 // Only check distances if cooldown has passed
                 const currentTime = Date.now();
                 if (currentTime - lastDistanceCheck >= DISTANCE_CHECK_COOLDOWN) {
-                    console.log("[Mobile Debug] Passed distance check cooldown");
                     lastDistanceCheck = currentTime;
 
-                    // Check distances to all characters
+                    // Check character distances for starting/ending dialogue
                     let closestCharacter = null;
                     let closestDistance = Infinity;
-                    console.log("[Mobile Debug] Checking distances to characters:", Object.keys(characters));
 
                     Object.values(characters).forEach(character => {
-                        if (!character) {
-                            console.log("[Mobile Debug] Skipping null character");
-                            return; 
-                        }
+                        if (!character) return;
+                        
                         const distance = calculateDistance(player.position, character.position);
-                        console.log(`[Mobile Debug] Distance to ${character.characterId}: ${distance}`); 
+                        
+                        // For starting dialogue: find closest character within dialogue distance
                         if (distance < DIALOGUE_DISTANCE && distance < closestDistance) {
-                            console.log(`[Mobile Debug] New closest character found: ${character.characterId} at distance ${distance}`);
                             closestCharacter = character;
                             closestDistance = distance;
                         }
-                    });
-
-                    // If player moves too far from active character, reset dialogue
-                    if (activeCharacter && calculateDistance(player.position, activeCharacter.position) > DIALOGUE_RESET_DISTANCE) {
-                        console.log("[Mobile Debug] Player moved too far, resetting dialogue");
-                        if (hasStartedDialogue && !resetCooldown) {
+                        
+                        // For ending dialogue: check if active character is too far
+                        if (activeCharacter === character && 
+                            distance > DIALOGUE_RESET_DISTANCE && 
+                            hasStartedDialogue && 
+                            !resetCooldown) {
                             resetDialogue();
                         }
+                    });
+
+                    // Start dialogue with closest character if not already in dialogue
+                    if (closestCharacter && !hasStartedDialogue && !resetCooldown) {
+                        console.log(`Starting dialogue with character:`, closestCharacter.characterId);
+                        startDialogueWithCharacter(closestCharacter);
                     }
-                    // If player is close to a character and dialogue hasn't started
-                    else if (closestCharacter && !hasStartedDialogue && !resetCooldown) {
-                        console.log(`[Mobile Debug] Conditions met! Attempting to start dialogue with ${closestCharacter.characterId}`);
-                        startDialogueWithCharacter(closestCharacter); 
-                    } else {
-                        // Log why dialogue isn't starting
-                        if (!closestCharacter) console.log("[Mobile Debug] Dialogue not starting: No character close enough.");
-                        if (hasStartedDialogue) console.log("[Mobile Debug] Dialogue not starting: Dialogue already active.");
-                        if (resetCooldown) console.log("[Mobile Debug] Dialogue not starting: In reset cooldown.");
-                    }
-                } 
-                // else { console.log("[Mobile Debug] Still in distance check cooldown"); } // Optional: uncomment if needed
+                }
             }
 
-            // Update the startDialogueWithCharacter function to properly handle vendor
+            // Update the startDialogueWithCharacter function to properly handle any character
             async function startDialogueWithCharacter(character) {
-                // --- Temporary Simple Test for Mobile Debugging --- 
-                try {
-                    console.log("[Mobile Test] Attempting simple dialogue for:", character.characterId);
-            
-                    const dialogueContainer = document.createElement('div');
-                    dialogueContainer.className = 'dialogue-container'; // Start without position class initially
-            
-                    const dialogueBox = document.createElement('div');
-                    dialogueBox.className = 'dialogue-box';
-                    dialogueBox.textContent = `TEST: Dialogue with ${character.characterId}`;
-                    dialogueBox.style.backgroundColor = 'lightgreen'; // Make it obvious
-            
-                    dialogueContainer.appendChild(dialogueBox);
-                    dialogueBoxesElement.appendChild(dialogueContainer);
-            
-                    // Add to our array for management
-                    dialogueBoxes.push(dialogueContainer);
-                    if (dialogueBoxes.length > 10) {
-                        const oldestBox = dialogueBoxes.shift();
-                        oldestBox.remove();
-                    }
-            
-                    // Apply positioning after adding to DOM
-                    updateBoxPositions(); 
-            
-                    console.log("[Mobile Test] Simple box added to DOM. Count:", dialogueBoxes.length);
-            
-                    // --- Minimal state updates needed for testing ---
-                    hasStartedDialogue = true; // Prevent immediate re-triggering
-                    activeCharacter = character;
-                    lastCharacterId = character.characterId;
-                    dialogueStartCooldown = true; // Apply cooldown
-                    setTimeout(() => { dialogueStartCooldown = false; }, 2000);
-            
-                } catch (e) {
-                    console.error("[Mobile Test] Error creating simple test box:", e);
-                    dialogueStartCooldown = false; // Reset cooldown on error
-                }
-                // --- End of Temporary Simple Test ---
-
-                /* --- Original Logic Start (Commented Out for Mobile Test) ---
                 try {
                     // Check if we're already in dialogue with this character
                     if (character.characterId === lastCharacterId && hasStartedDialogue) {
@@ -1468,7 +1370,6 @@
                     console.error("Error starting dialogue:", error);
                     dialogueStartCooldown = false;
                 }
-                --- Original Logic End --- */
             }
 
             // Add helper function to reset dialogue
@@ -1961,46 +1862,41 @@
                 speechSynthesis.speak(utterance);
             }
 
-            // Update the startRecognition function
-            function startRecognition() {
-                if (!recognition) {
-                    console.error('Speech recognition not initialized');
-                    return;
-                }
+            // Initialize recognition with the correct language
+            function initializeRecognition() {
+                if (!recognition) return;
                 
-                // If already recognizing, don't try to start again
-                if (isRecognizing) {
-                    console.log('Recognition already in progress');
-                    return;
-                }
+                // Set language based on what user is learning
+                recognition.lang = languageConfig.newLanguage === 'en' ? 'en-US' : 
+                                  languageConfig.newLanguage === 'es' ? 'es-ES' : 
+                                  languageConfig.newLanguage === 'ru' ? 'ru-RU' :
+                                  languageConfig.newLanguage === 'ar' ? 'ar-SA' : 'en-US';
+                                  
+                console.log("Recognition initialized with language:", recognition.lang);
+            }
+
+            // Start recognition
+            function startRecognition() {
+                if (!recognition || isRecognizing) return;
                 
                 try {
-                    // Stop any ongoing recognition first
+                    // Stop any ongoing recognition
                     recognition.stop();
-                    isRecognizing = false;
                     
-                    // Add a small delay before starting new recognition
+                    // Small delay before starting new recognition
                     setTimeout(() => {
                         try {
                             recognition.start();
                             isRecognizing = true;
-                            console.log('Recognition started successfully');
+                            console.log("Recognition started");
                         } catch (e) {
-                            console.error('Failed to start recognition:', e);
+                            console.error("Failed to start recognition:", e);
                             isRecognizing = false;
-                            // Only retry if we're in an active dialogue
-                            if (hasStartedDialogue && !speechSynthesis.speaking) {
-                                setTimeout(startRecognition, 1000);
-                            }
                         }
-                    }, 100);
+                    }, 200);
                 } catch (e) {
-                    console.error('Error in startRecognition:', e);
+                    console.error("Error preparing recognition:", e);
                     isRecognizing = false;
-                    // Only retry if we're in an active dialogue
-                    if (hasStartedDialogue && !speechSynthesis.speaking) {
-                        setTimeout(startRecognition, 1000);
-                    }
                 }
             }
 
