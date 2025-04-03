@@ -198,7 +198,7 @@ function displayDialogueStep() {
     
     // Create dialogue box if it doesn't exist
     if (!dialogueBox) {
-        createDialogueBox();
+        createDialogueBoxElement();
     }
     
     // Set character data
@@ -247,7 +247,7 @@ function displayDialogueStep() {
 /**
  * Create the dialogue box element
  */
-function createDialogueBox() {
+function createDialogueBoxElement() {
     // Get dialogue container
     const container = document.getElementById('dialogue-container');
     if (!container) {
