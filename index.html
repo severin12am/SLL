@@ -664,6 +664,14 @@
             let fences = [];
             const COLLISION_DISTANCE = 1.0; // Distance to maintain from fence
 
+            // Add boundary limits after other initialization variables
+            const MAP_BOUNDARIES = {
+                minX: -5,
+                maxX: 5,
+                minZ: -5,
+                maxZ: 5
+            };
+
             // Update the loadFence function to handle multiple fences
             function loadFence() {
                 return new Promise((resolve, reject) => {
@@ -1154,7 +1162,7 @@
                 return matchCount / maxLength;
             }
 
-            // Update the updatePlayer function to check collision with all fences
+            // Update the updatePlayer function to include boundary checks
             function updatePlayer(delta) {
                 if (!player) return;
                 if (isNaN(delta) || delta <= 0) return;
@@ -1171,18 +1179,13 @@
                 if (keys.left) newPosition.add(right.multiplyScalar(-speed * delta));
                 if (keys.right) newPosition.add(right.multiplyScalar(speed * delta));
 
-                // Check collision with all fences
-                for (const fence of fences) {
-                    const fencePosition = fence.position;
-                    const distanceToFence = newPosition.distanceTo(fencePosition);
-                    
-                    if (distanceToFence < COLLISION_DISTANCE) {
-                        // If too close to any fence, don't update position
-                        return;
-                    }
-                }
+                // Check map boundaries
+                if (newPosition.x < MAP_BOUNDARIES.minX) newPosition.x = MAP_BOUNDARIES.minX;
+                if (newPosition.x > MAP_BOUNDARIES.maxX) newPosition.x = MAP_BOUNDARIES.maxX;
+                if (newPosition.z < MAP_BOUNDARIES.minZ) newPosition.z = MAP_BOUNDARIES.minZ;
+                if (newPosition.z > MAP_BOUNDARIES.maxZ) newPosition.z = MAP_BOUNDARIES.maxZ;
 
-                // If no collision, update position
+                // Update position
                 player.position.copy(newPosition);
                 camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
 
