@@ -172,36 +172,87 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.8);
-                padding: 20px;
-                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.85);
+                padding: 30px;
+                border-radius: 15px;
                 z-index: 1000;
                 text-align: center;
                 color: white;
+                min-width: 300px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            }
+
+            #language-selection h2 {
+                margin: 0 0 20px 0;
+                font-size: 24px;
+                color: #4CAF50;
+            }
+
+            .language-select-container {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                margin-bottom: 25px;
+            }
+
+            .language-select-wrapper {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .language-select-wrapper label {
+                font-size: 16px;
+                color: #bfe3dd;
+                margin-left: 5px;
             }
 
             .language-select {
-                margin: 10px;
-                padding: 8px;
+                margin: 0;
+                padding: 10px;
                 background: #333;
                 color: white;
-                border: 1px solid #666;
-                border-radius: 5px;
-                width: 200px;
+                border: 2px solid #4CAF50;
+                border-radius: 8px;
+                width: 100%;
+                font-size: 16px;
+                transition: border-color 0.3s ease;
+            }
+
+            .language-select:hover {
+                border-color: #45a049;
+            }
+
+            .language-select:focus {
+                outline: none;
+                border-color: #4CAF50;
+                box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
             }
 
             .start-button {
-                margin-top: 20px;
-                padding: 10px 20px;
+                margin-top: 10px;
+                padding: 12px 30px;
                 background: #4CAF50;
                 color: white;
                 border: none;
-                border-radius: 5px;
+                border-radius: 8px;
                 cursor: pointer;
+                font-size: 16px;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                width: 100%;
             }
 
             .start-button:hover {
                 background: #45a049;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+            .start-button:active {
+                transform: translateY(0);
+                box-shadow: none;
             }
 
             @keyframes flash {
@@ -361,25 +412,26 @@
         <!-- Add language selection UI -->
         <div id="language-selection">
             <h2>Select Languages</h2>
-            <div>
-                <label for="mother-language">Your Language:</label>
-                <select id="mother-language" class="language-select">
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="ru">Russian</option>
-                    <option value="ar">Arabic</option>
-                </select>
+            <div class="language-select-container">
+                <div class="language-select-wrapper">
+                    <label for="mother-language">Your Language:</label>
+                    <select id="mother-language" class="language-select">
+                        <option value="en" selected>English</option>
+                        <option value="es">Spanish</option>
+                        <option value="ru">Russian</option>
+                        <option value="ar">Arabic</option>
+                    </select>
+                </div>
+                <div class="language-select-wrapper">
+                    <label for="new-language">Language to Learn:</label>
+                    <select id="new-language" class="language-select">
+                        <option value="es">Spanish</option>
+                        <option value="ru">Russian</option>
+                        <option value="ar">Arabic</option>
+                    </select>
+                </div>
             </div>
-            <div>
-                <label for="new-language">Language to Learn:</label>
-                <select id="new-language" class="language-select">
-                    <option value="es">Spanish</option>
-                    <option value="en">English</option>
-                    <option value="ru">Russian</option>
-                    <option value="ar">Arabic</option>
-                </select>
-            </div>
-            <button id="start-game" class="start-button">Start</button>
+            <button id="start-game" class="start-button">Start Learning</button>
         </div>
 
         <!-- Mobile Controls -->
@@ -465,25 +517,27 @@
             let popCatInstance = null;  // Single source of truth for Pop Cat instance
 
             function loadPopCat() {
-                // If Pop Cat is already loaded, don't load again
-                if (popCatInstance) {
-                    console.log("Pop Cat already exists, skipping load");
-                    return Promise.resolve(popCatInstance);
-                }
-
                 return new Promise((resolve, reject) => {
                     const catLoader = new GLTFLoader();
                     catLoader.load('models/pop_cat.glb', 
                         (gltf) => {
                             if (!popCatInstance) {
                                 popCatInstance = gltf.scene;
-                                // Update position to match the original position
-                                popCatInstance.position.set(1.5, -0.7, 2.5);
-                                popCatInstance.scale.set(0.02, 0.02, 0.02);
+                                popCatInstance.position.set(2.1, -0.9, 1.9);
+                                popCatInstance.scale.set(0.013, 0.013, 0.013);
                                 popCatInstance.rotation.y = Math.PI / 4;
                                 popCatInstance.characterId = 5;
                                 scene.add(popCatInstance);
                                 characters.popCat = popCatInstance;
+
+                                // Set up animation mixer
+                                popCatMixer = new THREE.AnimationMixer(popCatInstance);
+                                if (gltf.animations && gltf.animations.length > 0) {
+                                    popCatAnimation = popCatMixer.clipAction(gltf.animations[0]);
+                                    popCatAnimation.setLoop(THREE.LoopOnce);
+                                    popCatAnimation.clampWhenFinished = true;
+                                }
+
                                 console.log("Pop Cat loaded:", popCatInstance);
                             }
                             resolve(popCatInstance);
@@ -497,7 +551,7 @@
                 });
             }
 
-            // Update the fetchCharacters function to skip loading Pop Cat
+            // Update the fetchCharacters function to properly initialize the vendor
             function fetchCharacters() {
                 return supabase
                     .from('characters')
@@ -509,7 +563,9 @@
                             return;
                         }
 
-                        // Load each character model except Pop Cat
+                        console.log("Fetched characters:", characters);
+
+                        // Load each character model
                         characters.forEach(character => {
                             // Skip Pop Cat as it's handled separately
                             if (character.name === 'Pop Cat') return;
@@ -519,11 +575,14 @@
                                 const model = gltf.scene;
                                 model.position.set(character.position_x, character.position_y, character.position_z);
                                 model.scale.set(character.scale_x, character.scale_y, character.scale_z);
+                                model.characterId = character.id; // Add character ID to the model
                                 scene.add(model);
                                 
                                 if (character.name === 'Market Vendor') {
                                     vendor = model;
                                     characters.vendor = model;
+                                    registerCollidableObject(model); // Register vendor for collision
+                                    console.log("Vendor loaded with ID:", character.id, vendor);
                                 }
                             });
                         });
@@ -632,7 +691,7 @@
             const playerLoader = new GLTFLoader();
             playerLoader.load('models/player.glb', (gltf) => {
                 player = gltf.scene;
-                player.position.set(2.5, -2, 1.5); // Position directly in front of vendor
+                player.position.set(2.5, -2.15, 0); // Move player farther from vendor // Adjusted starting position
                 player.scale.set(0.5, 0.5, 0.5); // Adjust scale based on model size
                 player.visible = false; // Hide the player model in first-person view
                 scene.add(player);
@@ -652,7 +711,7 @@
                 popCat: null
             };
             const DIALOGUE_DISTANCE = 1.5;
-            const DIALOGUE_RESET_DISTANCE = 3;
+            const DIALOGUE_RESET_DISTANCE = 1.5;
 
             // Add this variable with other initialization variables
             let resetCooldown = false;
@@ -663,10 +722,10 @@
 
             // Add boundary limits after other initialization variables
             const MAP_BOUNDARIES = {
-                minX: -3,
-                maxX: 3,
-                minZ: -3,
-                maxZ: 3
+                minX: -2.5,
+                maxX: 2.9,
+                minZ: -2.9,
+                maxZ: 2.4
             };
 
             // Add collision detection variables after other initialization variables
@@ -1139,7 +1198,7 @@
                 return matchCount / maxLength;
             }
 
-            // Update the updatePlayer function to include object collision detection
+            // Update the updatePlayer function to handle collisions more smoothly
             function updatePlayer(delta) {
                 if (!player) return;
                 if (isNaN(delta) || delta <= 0) return;
@@ -1163,38 +1222,56 @@
                 if (newPosition.z > MAP_BOUNDARIES.maxZ) newPosition.z = MAP_BOUNDARIES.maxZ;
 
                 // Check collision with all scene objects
+                let collisionDetected = false;
                 for (const object of sceneObjects) {
                     if (object === player) continue; // Skip player collision check
                     
                     // Get object's bounding box
                     const box = new THREE.Box3().setFromObject(object);
                     
-                    // Expand the box slightly for collision distance
-                    box.expandByScalar(COLLISION_DISTANCE);
+                    // Use much smaller collision distance for vendor
+                    const objectCollisionDistance = object === vendor ? 0.1 : COLLISION_DISTANCE;
+                    box.expandByScalar(objectCollisionDistance);
                     
                     // Check if new position is inside the expanded box
                     if (box.containsPoint(newPosition)) {
+                        collisionDetected = true;
                         // Calculate the closest point on the box to the player
                         const closestPoint = new THREE.Vector3();
                         closestPoint.clamp(box.min, box.max);
                         
-                        // Move player away from the object
+                        // Calculate direction to move away from the object
                         const direction = newPosition.clone().sub(closestPoint).normalize();
-                        newPosition.copy(closestPoint).add(direction.multiplyScalar(COLLISION_DISTANCE));
+                        
+                        // Only adjust X and Z coordinates, keep Y (height) unchanged
+                        const adjustedPosition = closestPoint.clone().add(direction.multiplyScalar(objectCollisionDistance));
+                        newPosition.x = adjustedPosition.x;
+                        newPosition.z = adjustedPosition.z;
                     }
                 }
 
-                // Update position
-                player.position.copy(newPosition);
-                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
+                // Update position only if no collision or if we have a valid adjusted position
+                if (!collisionDetected || (newPosition.x !== player.position.x || newPosition.z !== player.position.z)) {
+                    player.position.copy(newPosition);
+                    camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
+                }
 
                 // Check distances to all characters
                 let closestCharacter = null;
                 let closestDistance = Infinity;
 
+                // Debug vendor position
+                if (vendor) {
+                    console.log("Vendor position:", vendor.position);
+                    console.log("Player position:", player.position);
+                    const vendorDistance = calculateDistance(player.position, vendor.position);
+                    console.log("Distance to vendor:", vendorDistance);
+                }
+
                 Object.values(characters).forEach(character => {
                     if (!character) return;
                     const distance = calculateDistance(player.position, character.position);
+                    console.log("Distance to character:", character.characterId, distance);
                     if (distance < DIALOGUE_DISTANCE && distance < closestDistance) {
                         closestCharacter = character;
                         closestDistance = distance;
@@ -1209,11 +1286,12 @@
                 }
                 // If player is close to a character and dialogue hasn't started
                 else if (closestCharacter && !hasStartedDialogue && !resetCooldown) {
+                    console.log("Starting dialogue with closest character:", closestCharacter.characterId);
                     startDialogueWithCharacter(closestCharacter);
                 }
             }
 
-            // Add helper function to start dialogue
+            // Update the startDialogueWithCharacter function to properly handle vendor
             async function startDialogueWithCharacter(character) {
                 try {
                     // Check if we're already in dialogue with this character
@@ -1356,6 +1434,11 @@
                         dialogueBoxes.push(dialogueBox);
                         updateBoxPositions();
                         updateFlashingState();
+                        
+                        // Animate Pop Cat if it's the active character
+                        if (activeCharacter === characters.popCat) {
+                            animatePopCat();
+                        }
                         
                         if (dialogueBoxes.length > 10) {
                             const oldestBox = dialogueBoxes.shift();
@@ -1573,8 +1656,12 @@
                     dialogueBoxes.forEach(box => box.remove());
                     dialogueBoxes = [];
 
-                    // Fetch dialogue data for the current character (starting with Market Vendor, id: 1)
-                    await fetchDialogueData(1, languageConfig.motherLanguage, languageConfig.newLanguage);
+                    // Get vendor's character ID
+                    const vendorId = vendor?.characterId;
+                    console.log("Initializing game with vendor ID:", vendorId);
+
+                    // Fetch dialogue data for the vendor
+                    await fetchDialogueData(vendorId, languageConfig.motherLanguage, languageConfig.newLanguage);
 
                     // Verify that dialogue data was loaded successfully
                     if (!dialogueSteps[languageConfig.newLanguage] || !dialogueSteps[languageConfig.newLanguage].length ||
@@ -1621,6 +1708,7 @@
                 try {
                     const delta = clock.getDelta();
                     if (mixer) mixer.update(delta);
+                    if (popCatMixer) popCatMixer.update(delta);
                     updatePlayer(delta);
                     updateCamera();
                     stats.update();
@@ -1781,13 +1869,17 @@
                     if (vendorResponse) {
                         speakVendorResponse(vendorResponse.text);
                         
+                        // Animate Pop Cat if it's the active character
+                        if (activeCharacter === characters.popCat) {
+                            animatePopCat();
+                        }
+                        
                         const vendorDelay = calculateVendorDelay(vendorResponse.text);
                         
                         setTimeout(() => {
                             currentStep = stepNumber + 1;
                             if (currentStep < dialogueSteps[languageConfig.newLanguage].length) {
                                 updateDialogue(currentStep, true);
-                                // Add a delay before starting recognition
                                 setTimeout(() => {
                                     if (!isRecognizing) {
                                         startRecognition();
@@ -1798,7 +1890,10 @@
                     }
                 } else {
                     currentStep = stepNumber;
-                    // Add a delay before starting recognition
+                    // Animate Pop Cat if it's the active character
+                    if (activeCharacter === characters.popCat) {
+                        animatePopCat();
+                    }
                     setTimeout(() => {
                         if (!isRecognizing) {
                             startRecognition();
@@ -1815,6 +1910,92 @@
                 const charDelay = text.length * 100;
                 // Cap maximum delay at 5000ms (5 seconds)
                 return Math.min(baseDelay + charDelay, 5000);
+            }
+
+            // Add this function after the existing language-related functions
+            function updateLanguageOptions(selectElement) {
+                const motherLanguageSelect = document.getElementById('mother-language');
+                const newLanguageSelect = document.getElementById('new-language');
+                const selectedLanguage = selectElement.value;
+                
+                // Get all options from both selects
+                const motherOptions = Array.from(motherLanguageSelect.options);
+                const newOptions = Array.from(newLanguageSelect.options);
+                
+                if (selectElement === motherLanguageSelect) {
+                    // If mother language is changed, update new language options
+                    newOptions.forEach(option => {
+                        option.disabled = option.value === selectedLanguage;
+                        if (option.disabled && option.selected) {
+                            // If the new language was the same as mother language,
+                            // select the first available language
+                            const firstAvailable = newOptions.find(opt => !opt.disabled);
+                            if (firstAvailable) {
+                                newLanguageSelect.value = firstAvailable.value;
+                            }
+                        }
+                    });
+                } else {
+                    // If new language is changed, update mother language options
+                    motherOptions.forEach(option => {
+                        option.disabled = option.value === selectedLanguage;
+                        if (option.disabled && option.selected) {
+                            // If the mother language was the same as new language,
+                            // select the first available language
+                            const firstAvailable = motherOptions.find(opt => !opt.disabled);
+                            if (firstAvailable) {
+                                motherLanguageSelect.value = firstAvailable.value;
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Update the language select elements to use the new function
+            document.getElementById('mother-language').addEventListener('change', function() {
+                updateLanguageOptions(this);
+                updateLanguage(this.value, 'mother');
+            });
+
+            document.getElementById('new-language').addEventListener('change', function() {
+                updateLanguageOptions(this);
+                updateLanguage(this.value, 'new');
+            });
+
+            // Initialize the language options when the page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                const motherLanguageSelect = document.getElementById('mother-language');
+                const newLanguageSelect = document.getElementById('new-language');
+                
+                // Set English as default mother language
+                motherLanguageSelect.value = 'en';
+                
+                // Set random new language (excluding English)
+                setRandomNewLanguage();
+                
+                // Initialize language options
+                updateLanguageOptions(motherLanguageSelect);
+                updateLanguageOptions(newLanguageSelect);
+            });
+
+            // Update the setRandomNewLanguage function to ensure it never selects English
+            function setRandomNewLanguage() {
+                const newLanguageSelect = document.getElementById('new-language');
+                const options = Array.from(newLanguageSelect.options).filter(opt => opt.value !== 'en');
+                const randomIndex = Math.floor(Math.random() * options.length);
+                newLanguageSelect.value = options[randomIndex].value;
+                updateLanguageOptions(newLanguageSelect);
+            }
+
+            // Add Pop Cat animation control
+            let popCatMixer = null;
+            let popCatAnimation = null;
+
+            function animatePopCat() {
+                if (popCatAnimation) {
+                    popCatAnimation.reset();
+                    popCatAnimation.play();
+                }
             }
         </script>
     </body>
