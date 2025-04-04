@@ -52,13 +52,20 @@ export const SUPPORTED_LANGUAGES = [
 export const SCENE_CONFIG = {
     backgroundColor: 0x87CEEB,  // Sky blue
     fogColor: 0xDFE9F3,
-    fogNear: 10,
-    fogFar: 30,
+    fogNear: 20,
+    fogFar: 50,
     ambientLightColor: 0xFFFFFF,
-    ambientLightIntensity: 0.5,
+    ambientLightIntensity: 0.7,
     directionalLightColor: 0xFFFFFF,
-    directionalLightIntensity: 1.0,
-    directionalLightPosition: { x: 5, y: 10, z: 7.5 }
+    directionalLightIntensity: 1.2,
+    directionalLightPosition: { x: 5, y: 10, z: 7.5 },
+    CAMERA_CONFIG: {
+        fov: 45,
+        near: 0.1,
+        far: 1000,
+        position: { x: 5, y: 2, z: 8 },
+        lookAt: { x: 0, y: 0.5, z: 0 }
+    }
 };
 
 // Camera settings

@@ -26,7 +26,15 @@ export function setupMouseControls(inputState, updateCameraFn) {
     // Setup pointer lock on click
     document.addEventListener('click', () => {
         if (!document.pointerLockElement) {
-            document.body.requestPointerLock();
+            try {
+                document.body.requestPointerLock().catch(error => {
+                    // Silently handle pointer lock errors
+                    console.warn("Pointer lock error:", error.message);
+                });
+            } catch (error) {
+                // Older browsers might throw instead of returning a promise
+                console.warn("Pointer lock not supported or blocked by browser:", error.message);
+            }
         }
     });
 

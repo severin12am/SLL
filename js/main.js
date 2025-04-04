@@ -42,6 +42,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         logger.info('Starting animation loop...', 'MAIN');
         animate();
         
+        // Set a timeout to force-hide the loading screen if it doesn't disappear
+        setTimeout(() => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                logger.warn('Loading screen timeout - forcing hide', 'MAIN');
+                hideLoadingScreen();
+            }
+        }, 15000); // 15 seconds timeout
+        
         logger.info('Application initialized successfully', 'MAIN');
     } catch (error) {
         logger.error(`Initialization failed: ${error.message}`, 'MAIN');

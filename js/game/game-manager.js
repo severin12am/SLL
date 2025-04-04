@@ -92,10 +92,10 @@ export function startGame() {
     if (gameState.isLoading) {
         logger.info('Starting game...', 'GAME');
         
-        // Hide start screen
-        const startScreen = document.getElementById('start-screen');
-        if (startScreen) {
-            startScreen.style.display = 'none';
+        // Hide language selection menu
+        const languageSelection = document.getElementById('language-selection');
+        if (languageSelection) {
+            languageSelection.style.display = 'none';
         }
         
         // Load characters
@@ -111,6 +111,12 @@ export function startGame() {
                 // Register update functions
                 registerUpdate(updateGame);
                 
+                // Hide loading screen
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
+                }
+                
                 // Game ready
                 gameState.isLoading = false;
                 logger.info('Game started successfully', 'GAME');
@@ -118,6 +124,12 @@ export function startGame() {
             .catch(error => {
                 logger.error('Error starting game: ' + error.message, 'GAME');
                 console.error(error);
+                
+                // Still hide loading screen on error
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
+                }
             });
     }
 }

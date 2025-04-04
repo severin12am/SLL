@@ -17,7 +17,7 @@ let updateFunctions = [];
  * @returns {Promise<Object>} The scene, camera, and renderer
  */
 export async function initScene() {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
         logger.info('Initializing Three.js scene', 'SCENE');
         
         // Create scene with background color from config
@@ -76,22 +76,28 @@ export async function initScene() {
         setupLighting(scene);
         
         // Create ground and grid
-        createGround(scene);
-        
-        // Add grid helper in debug mode
-        if (DEBUG_CONFIG.showColliders) {
-            createGridHelper(scene);
+        try {
+            await createGround(scene);
+            
+            // Add grid helper in debug mode
+            if (DEBUG_CONFIG.showColliders) {
+                createGridHelper(scene);
+            }
+            
+            // Set up window resize handler
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            logger.info('Scene initialization complete', 'SCENE');
+            resolve({ scene, camera, renderer });
+        } catch (error) {
+            logger.error(`Error creating ground: ${error.message}`, 'SCENE');
+            // Still resolve to continue application flow
+            resolve({ scene, camera, renderer });
         }
-        
-        // Set up window resize handler
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-        
-        logger.info('Scene initialization complete', 'SCENE');
-        resolve({ scene, camera, renderer });
     });
 }
 
