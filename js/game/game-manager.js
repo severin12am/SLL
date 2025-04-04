@@ -92,6 +92,24 @@ export function startGame() {
     if (gameState.isLoading) {
         logger.info('Starting game...', 'GAME');
         
+        // Force hide loading screen after 10 seconds maximum
+        setTimeout(() => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                logger.warn('Force hiding loading screen after timeout', 'GAME');
+                loadingScreen.style.display = 'none';
+                
+                // Also hide language selection if it's still visible
+                const languageSelection = document.getElementById('language-selection');
+                if (languageSelection) {
+                    languageSelection.style.display = 'none';
+                }
+                
+                // Set game as no longer loading
+                gameState.isLoading = false;
+            }
+        }, 10000);
+        
         // Hide language selection menu
         const languageSelection = document.getElementById('language-selection');
         if (languageSelection) {
@@ -130,6 +148,9 @@ export function startGame() {
                 if (loadingScreen) {
                     loadingScreen.style.display = 'none';
                 }
+                
+                // Game ready despite error
+                gameState.isLoading = false;
             });
     }
 }

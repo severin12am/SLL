@@ -42,10 +42,14 @@ export function createGround(scene) {
         // Add to scene as fallback
         scene.add(ground);
         
-        // Now load the Tokyo 3D model
+        // Log a message to confirm we're trying to load the model
+        logger.info('Attempting to load Tokyo 3D map...', 'GROUND');
+        
+        // Now load the Tokyo 3D model with correct path
         const loader = new GLTFLoader();
         
-        loader.load('models/gltf/LittlestTokyo.glb', function(gltf) {
+        // Try with both possible paths
+        loader.load('./models/gltf/LittlestTokyo.glb', function(gltf) {
             // Remove the fallback ground
             scene.remove(ground);
             
@@ -83,13 +87,32 @@ export function createGround(scene) {
         }, 
         // Progress callback
         function(xhr) {
-            logger.debug(`Tokyo map loading: ${Math.round(xhr.loaded / xhr.total * 100)}%`, 'GROUND');
+            const percentComplete = xhr.lengthComputable ? 
+                Math.round((xhr.loaded / xhr.total) * 100) : 0;
+            logger.debug(`Tokyo map loading: ${percentComplete}%`, 'GROUND');
         }, 
         // Error callback
         function(error) {
-            logger.error('Error loading Tokyo map: ' + error.message, 'GROUND');
-            logger.info('Using fallback ground plane', 'GROUND');
-            resolve(ground); // Resolve with fallback ground
+            console.error('Error loading Tokyo model:', error);
+            logger.error('Failed to load Tokyo map: ' + error.message, 'GROUND');
+            
+            // Try alternate path as fallback
+            loader.load('/models/gltf/LittlestTokyo.glb', function(gltf) {
+                // Handle successful load with alternate path
+                scene.remove(ground);
+                const model = gltf.scene;
+                model.scale.set(0.01, 0.01, 0.01);
+                scene.add(model);
+                logger.info('Tokyo 3D map loaded with alternate path', 'GROUND');
+                resolve(model);
+            }, 
+            null, 
+            function(secondError) {
+                // Both paths failed, use fallback ground
+                console.error('Error loading Tokyo model with alternate path:', secondError);
+                logger.warn('Using fallback ground plane after failed attempts', 'GROUND');
+                resolve(ground);
+            });
         });
     });
 }
