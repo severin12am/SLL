@@ -114,16 +114,30 @@ export class DialogueManager {
         const textDiv = document.createElement('div');
         textDiv.className = 'dialogue-text';
         
-        // Create the phrase display
+        // Create the phrase display with clickable words
         const phraseSpan = document.createElement('span');
         phraseSpan.className = 'phrase';
         
-        // Split by characters but preserve spaces
-        [...targetPhrase.text].forEach(char => {
-            const span = document.createElement('span');
-            // Use non-breaking space for visual spaces
-            span.textContent = char === ' ' ? '\u00A0' : char;
-            phraseSpan.appendChild(span);
+        // Split text into words and make them clickable
+        const words = targetPhrase.text.split(' ');
+        words.forEach((word, index) => {
+            const cleanWord = word.trim().replace(/[.,!?]/g, '');
+            if (cleanWord) {
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'clickable-word';
+                wordSpan.textContent = word;
+                wordSpan.dataset.word = cleanWord;
+                wordSpan.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.showWordExplanation(cleanWord);
+                });
+                phraseSpan.appendChild(wordSpan);
+                
+                // Add space between words (except for last word)
+                if (index < words.length - 1) {
+                    phraseSpan.appendChild(document.createTextNode(' '));
+                }
+            }
         });
         
         // Get the correct phonetic text based on mother language
@@ -465,6 +479,56 @@ export class DialogueManager {
             this.currentUserBox = box;
             this.currentStep++;
         }
+    }
+
+    showWordExplanation(word) {
+        // Example explanations - in a real app, these would come from your database
+        const explanations = {
+            'hello': 'A common greeting used when meeting someone.',
+            'hi': 'An informal way to say hello.',
+            'apples': 'A round fruit that grows on apple trees. Usually red, green, or yellow in color.',
+            'have': 'To possess, own, or hold something.',
+            'you': 'Refers to the person being spoken to.',
+            'do': 'Used to form questions and negative statements.',
+            'привет': 'A casual greeting in Russian, similar to "hi" or "hello".',
+            'у': 'A preposition in Russian meaning "at" or "by", often used to indicate possession.',
+            'тебя': 'The genitive case of "you" in Russian.',
+            'есть': 'A verb meaning "to be" or "to have" in Russian.',
+            'яблоки': 'The Russian word for "apples".'
+        };
+
+        const explanation = explanations[word.toLowerCase()] || `Explanation for "${word}" will be added soon.`;
+        
+        // Get or create word explanation div
+        let explanationDiv = document.getElementById('word-explanation');
+        if (!explanationDiv) {
+            explanationDiv = document.createElement('div');
+            explanationDiv.id = 'word-explanation';
+            document.body.appendChild(explanationDiv);
+        }
+        
+        explanationDiv.innerHTML = `
+            <div class="robot-quote">
+                <div class="quote-bubble">
+                    <h3 style="color: #4CAF50; margin: 0 0 10px 0; font-size: 18px;">Word Explanation</h3>
+                    <div id="explanation-content" style="color: white; font-size: 16px;">${explanation}</div>
+                </div>
+            </div>
+        `;
+        
+        explanationDiv.style.display = 'block';
+        setTimeout(() => explanationDiv.classList.add('visible'), 10);
+        
+        // Hide explanation when clicking outside
+        const hideExplanation = (e) => {
+            if (!e.target.closest('.clickable-word') && !e.target.closest('#word-explanation')) {
+                explanationDiv.classList.remove('visible');
+                setTimeout(() => explanationDiv.style.display = 'none', 300);
+                document.removeEventListener('click', hideExplanation);
+            }
+        };
+        
+        document.addEventListener('click', hideExplanation);
     }
 }
 

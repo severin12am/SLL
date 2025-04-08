@@ -567,6 +567,49 @@
             margin-bottom: 15px;
             text-align: center;
         }
+
+        /* Add styles for word explanations */
+        .clickable-word {
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-decoration-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .clickable-word:hover {
+            color: #4CAF50;
+            text-decoration-color: #4CAF50;
+        }
+
+        #word-explanation {
+            position: fixed;
+            left: 20%;
+            bottom: 20%;
+            width: 300px;
+            z-index: 2000;
+            pointer-events: none; /* Allow clicking through when not visible */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #word-explanation.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Ensure the robot quote styling is consistent */
+        #word-explanation .robot-quote {
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        #word-explanation .quote-bubble {
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            border-radius: 15px;
+            background: rgba(76, 175, 80, 0.1);
+            padding: 15px;
+        }
         </style>
     </head>
     <body>
@@ -657,6 +700,15 @@
                     <div class="choice-menu-title">Hey there! Ready to practice some conversations?</div>
                     <p>I've prepared some useful dialogues for you. Choose one and I'll guide you through it!</p>
                     <div id="dialogue-choices"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="word-explanation" style="display: none;">
+            <div class="robot-quote">
+                <div class="quote-bubble">
+                    <h3 style="color: #4CAF50; margin: 0 0 10px 0; font-size: 18px;">Word Explanation</h3>
+                    <div id="explanation-content" style="color: white; font-size: 16px;"></div>
                 </div>
             </div>
         </div>
@@ -1247,6 +1299,80 @@
                     robot.rotation.z = 0;
                 }
             }
+
+            // Add these functions to your existing JavaScript
+            function makeWordsClickable(text) {
+                return text.split(' ').map(word => {
+                    const cleanWord = word.trim().replace(/[.,!?]/g, '');
+                    if (cleanWord) {
+                        return `<span class="clickable-word" data-word="${cleanWord}">${word}</span>`;
+                    }
+                    return word;
+                }).join(' ');
+            }
+
+            function showWordExplanation(word) {
+                // Example explanations - in a real app, these would come from your database
+                const explanations = {
+                    'hello': 'A common greeting used when meeting someone.',
+                    'hi': 'An informal way to say hello.',
+                    'apples': 'A round fruit that grows on apple trees. Usually red, green, or yellow in color.',
+                    'have': 'To possess, own, or hold something.',
+                    'you': 'Refers to the person being spoken to.',
+                    'do': 'Used to form questions and negative statements.',
+                    // Add more explanations as needed
+                };
+
+                const explanation = explanations[word.toLowerCase()] || `Explanation for "${word}" will be added soon.`;
+                const explanationDiv = document.getElementById('word-explanation');
+                const contentDiv = document.getElementById('explanation-content');
+                
+                contentDiv.textContent = explanation;
+                explanationDiv.style.display = 'block';
+                setTimeout(() => explanationDiv.classList.add('visible'), 10);
+            }
+
+            function hideWordExplanation() {
+                const explanationDiv = document.getElementById('word-explanation');
+                explanationDiv.classList.remove('visible');
+                setTimeout(() => explanationDiv.style.display = 'none', 300);
+            }
+
+            // Modify your createDialogueBox function to include clickable words
+            function createDialogueBox(targetPhrase, isUserTurn = false) {
+                const box = document.createElement('div');
+                box.className = 'dialogue-box' + (isUserTurn ? ' user-turn' : '');
+                
+                // Get the appropriate phonetic text based on mother language
+                const phoneticField = `phonetic_text_${window.gameState.motherLanguage}`;
+                const phoneticText = targetPhrase[phoneticField] || targetPhrase.transcription || '';
+                
+                // Make the main text words clickable
+                const clickableText = makeWordsClickable(targetPhrase.text);
+                
+                box.innerHTML = `
+                    <div class="dialogue-text">${clickableText}</div>
+                    <div class="phonetic-text">[${phoneticText}]</div>
+                    <div class="translation-text">${targetPhrase.translation}</div>
+                `;
+                
+                // Add click event listeners to the clickable words
+                box.querySelectorAll('.clickable-word').forEach(wordSpan => {
+                    wordSpan.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showWordExplanation(wordSpan.dataset.word);
+                    });
+                });
+                
+                return box;
+            }
+
+            // Add a click event listener to hide the explanation when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('clickable-word')) {
+                    hideWordExplanation();
+                }
+            });
         </script>
     </body>
 </html>
