@@ -146,12 +146,15 @@ export class DialogueManager {
             // Add speech input indicator
             const inputIndicator = document.createElement('div');
             inputIndicator.className = 'input-indicator';
-            inputIndicator.textContent = 'Click microphone to speak';
+            inputIndicator.textContent = 'Listening...';
             textDiv.appendChild(inputIndicator);
             
             // Store reference to current box and phrase for speech recognition
             this.currentUserBox = box;
             this.currentTargetPhrase = targetPhrase.text;
+            
+            // Start listening automatically
+            this.startListening();
         }
         
         const controls = document.createElement('div');
@@ -163,15 +166,7 @@ export class DialogueManager {
         
         const returnButton = document.createElement('button');
         returnButton.innerHTML = '↩';
-        returnButton.onclick = () => this.returnToPreviousStep();
-        
-        if (isUser) {
-            const micButton = document.createElement('button');
-            micButton.innerHTML = '🎤';
-            micButton.className = 'mic-button';
-            micButton.onclick = () => this.toggleSpeechRecognition(micButton);
-            controls.appendChild(micButton);
-        }
+        returnButton.onclick = () => this.handleReturnClick(event);
         
         controls.appendChild(soundButton);
         controls.appendChild(returnButton);
@@ -182,32 +177,63 @@ export class DialogueManager {
         return box;
     }
 
-    toggleSpeechRecognition(micButton) {
+    startListening() {
         if (!this.recognition) return;
         
-        if (this.isListening) {
-            // Stop listening
-            this.isListening = false;
-            this.recognition.stop();
-            micButton.style.background = 'rgba(255, 255, 255, 0.1)';
-            if (this.currentUserBox) {
-                const indicator = this.currentUserBox.querySelector('.input-indicator');
-                if (indicator) {
-                    indicator.textContent = 'Click microphone to speak';
-                }
+        this.isListening = true;
+        this.recognition.lang = window.gameState.targetLanguage;
+        this.recognition.start();
+        
+        if (this.currentUserBox) {
+            this.currentUserBox.setAttribute('data-listening', 'true');
+            const indicator = this.currentUserBox.querySelector('.input-indicator');
+            if (indicator) {
+                indicator.textContent = 'Listening...';
             }
-        } else {
-            // Start listening
-            this.isListening = true;
-            this.recognition.lang = window.gameState.targetLanguage;
-            this.recognition.start();
-            micButton.style.background = 'rgba(255, 0, 0, 0.3)';
-            if (this.currentUserBox) {
-                const indicator = this.currentUserBox.querySelector('.input-indicator');
-                if (indicator) {
-                    indicator.textContent = 'Listening...';
-                }
+        }
+    }
+
+    stopListening() {
+        if (!this.recognition) return;
+        
+        this.isListening = false;
+        this.recognition.stop();
+        
+        if (this.currentUserBox) {
+            this.currentUserBox.removeAttribute('data-listening');
+            const indicator = this.currentUserBox.querySelector('.input-indicator');
+            if (indicator && indicator.textContent === 'Listening...') {
+                indicator.textContent = 'Say the phrase...';
             }
+        }
+    }
+
+    handleReturnClick(event) {
+        const clickedBox = event.target.closest('.dialogue-box');
+        if (!clickedBox) return;
+        
+        const targetStep = parseInt(clickedBox.getAttribute('data-step'));
+        
+        // Stop current listening if any
+        this.stopListening();
+        
+        // Remove all dialogue boxes after the clicked one
+        const allBoxes = Array.from(document.querySelectorAll('.dialogue-box'));
+        const boxIndex = allBoxes.indexOf(clickedBox);
+        
+        // Remove boxes after the clicked one with animation
+        allBoxes.slice(boxIndex + 1).forEach(box => {
+            box.classList.add('sliding-up');
+            setTimeout(() => box.remove(), 300);
+        });
+        
+        // Set the current step to the clicked box's step
+        this.currentStep = targetStep;
+        this.currentUserBox = clickedBox;
+        
+        // Start listening if it's a user turn
+        if (this.isUserTurn(targetStep)) {
+            this.startListening();
         }
     }
 
@@ -270,8 +296,7 @@ export class DialogueManager {
         
         // If match percentage is over 60%, proceed to next step
         if (matchPercentage >= 60) {
-            this.isListening = false;
-            this.recognition.stop();
+            this.stopListening();
             
             // Show success indicator
             if (this.currentUserBox) {
@@ -282,10 +307,16 @@ export class DialogueManager {
                 }
             }
             
-            // Proceed to next step after a delay
+            // Get the current step from the box
+            const currentBoxStep = parseInt(this.currentUserBox.getAttribute('data-step'));
+            
+            // Update the current step to continue from this point
+            this.currentStep = currentBoxStep + 1;
+            
+            // Wait a short moment to show the success message before proceeding
             setTimeout(() => {
                 this.showNextStep();
-            }, 1000);
+            }, 500);
         }
     }
 
@@ -321,10 +352,24 @@ export class DialogueManager {
     playPhrase(phrase) {
         const utterance = new SpeechSynthesisUtterance(phrase);
         utterance.lang = window.gameState.targetLanguage;
-        this.synthesis.speak(utterance);
+        
+        // Calculate approximate duration (100ms per character + 500ms base)
+        const estimatedDuration = phrase.length * 100 + 500;
+        
+        // Return a promise that resolves when speech is done
+        return new Promise((resolve) => {
+            utterance.onend = () => {
+                resolve();
+            };
+            
+            // Fallback in case onend doesn't fire
+            setTimeout(resolve, estimatedDuration);
+            
+            this.synthesis.speak(utterance);
+        });
     }
 
-    showNextStep() {
+    async showNextStep() {
         if (this.currentStep >= this.dialogueHistory.length) {
             console.log('Dialogue sequence completed');
             return;
@@ -337,7 +382,7 @@ export class DialogueManager {
         
         // Check if this box has already been shown
         const existingBox = this.dialogueBoxes.find(box => 
-            box.getAttribute('data-step') === this.currentStep.toString()
+            parseInt(box.getAttribute('data-step')) === this.currentStep
         );
         
         if (existingBox) {
@@ -345,6 +390,15 @@ export class DialogueManager {
             this.currentStep++;
             return;
         }
+        
+        // Remove any boxes that shouldn't be there
+        const extraBoxes = this.dialogueBoxes.filter(box => 
+            parseInt(box.getAttribute('data-step')) >= this.currentStep
+        );
+        extraBoxes.forEach(box => {
+            box.remove();
+            this.dialogueBoxes = this.dialogueBoxes.filter(b => b !== box);
+        });
         
         const box = this.createDialogueBox(
             currentDialogue.motherPhrase,
@@ -359,13 +413,6 @@ export class DialogueManager {
         this.container.appendChild(box);
         this.dialogueBoxes.push(box);
         
-        // Animate previous boxes up
-        this.dialogueBoxes.forEach((oldBox, index) => {
-            if (index < this.dialogueBoxes.length - 1) {
-                oldBox.classList.add('sliding-up');
-            }
-        });
-        
         // Animate new box in
         requestAnimationFrame(() => {
             box.classList.add('active');
@@ -373,40 +420,17 @@ export class DialogueManager {
 
         // If it's vendor's turn, automatically play the audio and proceed
         if (!isUserTurn) {
-            // Play the vendor's response
-            this.playPhrase(currentDialogue.targetPhrase.text);
+            // Play the vendor's response and wait for it to finish
+            await this.playPhrase(currentDialogue.targetPhrase.text);
             
-            // Wait for audio to finish (approximately) then show next step
-            // Estimate duration based on text length (roughly 100ms per character)
-            const duration = currentDialogue.targetPhrase.text.length * 100;
-            setTimeout(() => {
-                this.currentStep++;
-                this.showNextStep();
-            }, duration + 500); // Add 500ms buffer
+            // Proceed to next step immediately after speech finishes
+            this.currentStep++;
+            this.showNextStep();
         } else {
             // For user turns, set this as the current user box for speech recognition
             this.currentUserBox = box;
             this.currentStep++;
         }
-    }
-
-    returnToPreviousStep() {
-        if (this.currentStep <= 1) return;
-        
-        // Remove current box
-        const currentBox = this.dialogueBoxes.pop();
-        currentBox.classList.add('sliding-up');
-        setTimeout(() => currentBox.remove(), 300);
-        
-        // Update step
-        this.currentStep -= 2;
-        
-        // Show previous boxes
-        this.dialogueBoxes.forEach(box => {
-            box.classList.remove('sliding-up');
-        });
-        
-        this.showNextStep();
     }
 }
 
