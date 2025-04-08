@@ -29,9 +29,9 @@
         #dialogue-container {
             position: fixed;
             bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100%;
             max-width: 800px;
             z-index: 1000;
         }
@@ -45,22 +45,22 @@
             font-family: 'Arial', sans-serif;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
+                display: flex;
             align-items: center;
             justify-content: space-between;
             max-width: 900px;
         }
 
         .dialogue-text {
-            display: flex;
-            align-items: center;
+                display: flex;
+                align-items: center;
             gap: 4px;
             flex: 1;
             justify-content: center;
             font-size: 18px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
         }
 
         .phrase {
@@ -81,27 +81,27 @@
         .dialogue-controls button {
             background: rgba(255, 255, 255, 0.1);
             border: none;
-            border-radius: 50%;
+                border-radius: 50%;
             width: 32px;
             height: 32px;
             color: white;
             font-size: 16px;
-            cursor: pointer;
+                cursor: pointer;
             transition: all 0.2s ease;
             margin: 0 8px;
             padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
 
         .dialogue-controls button:hover {
             background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
+                transform: scale(1.1);
         }
 
         .input-indicator {
-            position: absolute;
+                position: absolute;
             bottom: -25px;
             left: 50%;
             transform: translateX(-50%);
@@ -445,7 +445,7 @@
         margin-bottom: 15px;
         color: #4CAF50;
         text-align: center;
-    }
+            }
         </style>
     </head>
     <body>
@@ -542,7 +542,7 @@
             import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
             import { createClient } from '@supabase/supabase-js';
             import { SUPABASE_CONFIG, GAME_CONFIG } from './js/config.js';
-            
+
             // Initialize Supabase client
             const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
             window.supabase = supabase; // Make supabase available globally
@@ -616,10 +616,10 @@
                 camera.lookAt(0, 1.5, -10);
                 
                 // Create renderer
-                const renderer = new THREE.WebGLRenderer({ antialias: true });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                container.appendChild(renderer.domElement);
-                
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
                 // Store in gameState
                 window.gameState.scene = scene;
                 window.gameState.camera = camera;
@@ -951,8 +951,8 @@
                 if (window.gameState.isDialogueActive || 
                     window.gameState.currentDialogueSteps || 
                     window.gameState.hasJustFinishedDialogue) {
-                    return;
-                }
+                                return;
+                            }
 
                 try {
                     const { motherLanguage, targetLanguage } = window.gameState;
@@ -973,9 +973,9 @@
 
                     if (error || !data || data.length === 0) {
                         console.error('Error fetching dialogues:', error);
-                        return;
-                    }
-
+                    return;
+                }
+                
                     // Group phrases by dialogue_number
                     const dialogues = data.reduce((acc, phrase) => {
                         if (!acc[phrase.dialogue_number]) {
@@ -1025,7 +1025,7 @@
                     noChoicesMsg.style.color = '#ff6b6b';
                     noChoicesMsg.style.padding = '10px';
                     choicesContainer.appendChild(noChoicesMsg);
-                } else {
+                    } else {
                     dialogues.forEach((dialogueSteps, index) => {
                         const firstStep = dialogueSteps[0];
                         const button = document.createElement('button');

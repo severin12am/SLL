@@ -216,21 +216,49 @@ export class DialogueManager {
         console.log('Target phrase:', targetPhrase);
         
         const target = targetPhrase.toLowerCase();
+        const transcriptLower = transcript.toLowerCase();
         
         // Calculate match percentage using Levenshtein distance
-        const distance = this.levenshteinDistance(transcript, target);
+        const distance = this.levenshteinDistance(transcriptLower, target);
         const matchPercentage = ((target.length - distance) / target.length) * 100;
         
-        // Highlight matching characters
+        // Highlight matching words
         if (this.currentUserBox) {
             const phraseSpans = this.currentUserBox.querySelectorAll('.phrase span');
-            const transcriptChars = transcript.split('');
+            const targetWords = target.split(/\s+/);
+            const transcriptWords = transcriptLower.split(/\s+/);
             
+            // Create a map of which characters belong to which word
+            let currentWordIndex = 0;
+            const charToWordMap = new Array(target.length);
+            let charCount = 0;
+            
+            targetWords.forEach((word, wordIndex) => {
+                for (let i = 0; i < word.length; i++) {
+                    charToWordMap[charCount + i] = wordIndex;
+                }
+                charCount += word.length + 1; // +1 for space
+            });
+            
+            // Check each word for matches
+            const wordMatches = targetWords.map((targetWord, index) => {
+                if (index < transcriptWords.length) {
+                    const wordDistance = this.levenshteinDistance(transcriptWords[index], targetWord);
+                    // Consider a word matched if it's at least 60% similar
+                    return (wordDistance / targetWord.length) <= 0.4;
+                }
+                return false;
+            });
+            
+            // Apply highlighting based on word matches
             phraseSpans.forEach((span, i) => {
-                if (i < transcriptChars.length && transcriptChars[i] === target[i]) {
-                    span.classList.add('matched');
-                } else {
-                    span.classList.remove('matched');
+                if (i < charToWordMap.length) {
+                    const wordIndex = charToWordMap[i];
+                    if (wordMatches[wordIndex]) {
+                        span.classList.add('matched');
+                    } else {
+                        span.classList.remove('matched');
+                    }
                 }
             });
             
@@ -307,11 +335,25 @@ export class DialogueManager {
         
         const isUserTurn = this.currentStep % 2 === 0;
         
+        // Check if this box has already been shown
+        const existingBox = this.dialogueBoxes.find(box => 
+            box.getAttribute('data-step') === this.currentStep.toString()
+        );
+        
+        if (existingBox) {
+            console.log('Box already exists for step:', this.currentStep);
+            this.currentStep++;
+            return;
+        }
+        
         const box = this.createDialogueBox(
             currentDialogue.motherPhrase,
             currentDialogue.targetPhrase,
             isUserTurn
         );
+        
+        // Mark the box with its step number
+        box.setAttribute('data-step', this.currentStep.toString());
         
         // Add box to container
         this.container.appendChild(box);
@@ -328,8 +370,24 @@ export class DialogueManager {
         requestAnimationFrame(() => {
             box.classList.add('active');
         });
-        
-        this.currentStep++;
+
+        // If it's vendor's turn, automatically play the audio and proceed
+        if (!isUserTurn) {
+            // Play the vendor's response
+            this.playPhrase(currentDialogue.targetPhrase.text);
+            
+            // Wait for audio to finish (approximately) then show next step
+            // Estimate duration based on text length (roughly 100ms per character)
+            const duration = currentDialogue.targetPhrase.text.length * 100;
+            setTimeout(() => {
+                this.currentStep++;
+                this.showNextStep();
+            }, duration + 500); // Add 500ms buffer
+        } else {
+            // For user turns, set this as the current user box for speech recognition
+            this.currentUserBox = box;
+            this.currentStep++;
+        }
     }
 
     returnToPreviousStep() {

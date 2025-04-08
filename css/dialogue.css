@@ -61,7 +61,7 @@
 }
 
 .phrase span.matched {
-    color: #4CAF50;
+    color: #4169E1;  /* Royal Blue */
 }
 
 .phonetic {
