@@ -37,7 +37,8 @@
         }
 
         .dialogue-box {
-            background: rgba(0, 0, 0, 0.85);
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: none;
             border-radius: 12px;
             padding: 15px 20px;
             margin: 0 20px;
@@ -144,16 +145,7 @@
 
         /* Position Display Styles */
         #position-display {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 14px;
-            z-index: 1000;
+            display: none;
         }
 
         /* Language Selection */
@@ -449,55 +441,51 @@
         </style>
     </head>
     <body>
-        <div id="loading-screen">
-            <h1>Loading Game</h1>
+        <div id="container"></div>
+
+        <!-- Language Selection Menu -->
+        <div id="main-menu">
+            <h1>CAPI - SITUATIONAL LANGUAGE LEARNING</h1>
             <div id="loading-bar">
                 <div id="loading-progress"></div>
         </div>
-            <div id="loading-status">Initializing...</div>
-            <button id="start-game" style="display: none;">START GAME</button>
-            <button id="force-start" style="display: none;">FORCE START</button>
+            <div id="loading-status">Loading...</div>
+            
+            <div class="language-section">
+                <h3>I already speak</h3>
+                <select class="language-select" id="mother-language">
+                    <option value="" disabled selected>Select your language</option>
+                    <option value="en">English</option>
+                    <option value="es">Spanish (Español)</option>
+                    <option value="fr">French (Français)</option>
+                    <option value="de">German (Deutsch)</option>
+                    <option value="ru">Russian (Русский)</option>
+                    <option value="zh">Chinese (中文)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="ar">Arabic (العربية)</option>
+                    <option value="pt">Portuguese (Português)</option>
+                    <option value="it">Italian (Italiano)</option>
+                </select>
+            </div>
+            <div class="language-section">
+                <h3>I want to learn</h3>
+                <select class="language-select" id="target-language">
+                    <option value="" disabled selected>Select language to learn</option>
+                    <option value="en">English</option>
+                    <option value="es">Spanish (Español)</option>
+                    <option value="fr">French (Français)</option>
+                    <option value="de">German (Deutsch)</option>
+                    <option value="ru">Russian (Русский)</option>
+                    <option value="zh">Chinese (中文)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="ar">Arabic (العربية)</option>
+                    <option value="pt">Portuguese (Português)</option>
+                    <option value="it">Italian (Italiano)</option>
+                </select>
+            </div>
+            <button id="start-game">START GAME</button>
         </div>
 
-        <div id="container"></div>
-
-        <div id="language-selection">
-            <h1 class="menu-title">Language Learning World</h1>
-            <div class="instruction-text" id="instruction-text">Choose the language you already know</div>
-            
-            <select class="language-select" id="mother-language">
-                <option value="" disabled selected>Select your language</option>
-                    <option value="en">English</option>
-                <option value="es">Spanish (Español)</option>
-                <option value="fr">French (Français)</option>
-                <option value="de">German (Deutsch)</option>
-                <option value="ru">Russian (Русский)</option>
-                <option value="zh">Chinese (中文)</option>
-                <option value="ja">Japanese (日本語)</option>
-                <option value="ar">Arabic (العربية)</option>
-                <option value="pt">Portuguese (Português)</option>
-                <option value="it">Italian (Italiano)</option>
-                </select>
-
-            <select class="language-select" id="target-language">
-                <option value="" disabled selected>Select language to learn</option>
-                    <option value="en">English</option>
-                <option value="es">Spanish (Español)</option>
-                <option value="fr">French (Français)</option>
-                <option value="de">German (Deutsch)</option>
-                <option value="ru">Russian (Русский)</option>
-                <option value="zh">Chinese (中文)</option>
-                <option value="ja">Japanese (日本語)</option>
-                <option value="ar">Arabic (العربية)</option>
-                <option value="pt">Portuguese (Português)</option>
-                <option value="it">Italian (Italiano)</option>
-                </select>
-
-            <button id="start-learning">Start Learning</button>
-            </div>
-
-        <div id="position-display">Position: <span id="coords">0, 0, 0</span></div>
-        
         <!-- Dialogue System -->
         <div id="dialogue-container" class="dialogue-container" style="display: none;">
             <div class="dialogue-box">
@@ -524,14 +512,6 @@
         
         <!-- Success indicator -->
         <div id="success-indicator">✓</div>
-      
-        <!-- Movement Debug HUD -->
-        <div id="movement-hud" style="position: fixed; top: 10px; left: 10px; background-color: rgba(0,0,0,0.5); color: white; padding: 10px; font-family: monospace; z-index: 999; display: none;">
-            <div>W: <span id="hud-w">⬜</span></div>
-            <div>A: <span id="hud-a">⬜</span></div>
-            <div>S: <span id="hud-s">⬜</span></div>
-            <div>D: <span id="hud-d">⬜</span></div>
-        </div>
 
         <!-- Dialogue Choice Menu -->
         <div id="dialogue-choice-menu" style="display: none;"></div>
@@ -674,17 +654,12 @@
 
             function animate() {
                 requestAnimationFrame(animate);
-                updatePositionDisplay();
                 
                 // Check distance to vendor for dialogue trigger
                 if (window.gameState.camera && window.gameState.vendor) {
                     const camera = window.gameState.camera;
                     const vendor = window.gameState.vendor;
                     const distance = camera.position.distanceTo(vendor.position);
-                    
-                    // Update position display
-                    document.getElementById('position-display').textContent = 
-                        `Position: X:${camera.position.x.toFixed(2)} Y:${camera.position.y.toFixed(2)} Z:${camera.position.z.toFixed(2)} | Distance to vendor: ${distance.toFixed(2)}`;
                     
                     // Show/hide dialogue based on distance and state
                     if (distance <= GAME_CONFIG.vendorTriggerDistance) {
@@ -700,7 +675,7 @@
                                 fetchDialogueChoices();
                             }
                         }
-                    } else {
+                            } else {
                         // Reset all dialogue states when moving away from vendor
                         const choiceMenu = document.getElementById('dialogue-choice-menu');
                         if (choiceMenu) {
@@ -728,98 +703,66 @@
                 setupKeyboardControls();
                 setupMouseControls();
                 setupMovementLoop();
-                
-                // Show movement HUD
-                const movementHud = document.getElementById('movement-hud');
-                if (movementHud) {
-                    movementHud.style.display = 'block';
-                }
-            }
-
-            // Single movement system
-            function movePlayer(direction) {
-                if (!window.gameState.camera) return;
-                
-                const speed = GAME_CONFIG.movementSpeed;
-                const boundaries = {
-                    minX: -7,
-                    maxX: 3.6,
-                    minZ: -6,
-                    maxZ: 5
-                };
-                
-                const camera = window.gameState.camera;
-                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
-                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).setY(0).normalize();
-                
-                const moveVector = new THREE.Vector3();
-                switch(direction) {
-                    case 'forward': moveVector.add(forward.multiplyScalar(speed)); break;
-                    case 'backward': moveVector.add(forward.multiplyScalar(-speed)); break;
-                    case 'left': moveVector.add(right.multiplyScalar(-speed)); break;
-                    case 'right': moveVector.add(right.multiplyScalar(speed)); break;
-                }
-                
-                const newPosition = camera.position.clone().add(moveVector);
-                newPosition.y = 1.5;
-                
-                // Allow sliding along boundaries
-                if (newPosition.x < boundaries.minX) newPosition.x = boundaries.minX;
-                if (newPosition.x > boundaries.maxX) newPosition.x = boundaries.maxX;
-                if (newPosition.z < boundaries.minZ) newPosition.z = boundaries.minZ;
-                if (newPosition.z > boundaries.maxZ) newPosition.z = boundaries.maxZ;
-                
-                camera.position.copy(newPosition);
-                updatePositionDisplay();
             }
 
             function setupKeyboardControls() {
                 const keyDownHandler = (e) => {
-                    switch(e.key.toLowerCase()) {
-                        case 'w':
-                        case 'arrowup':
+                    // Use key codes for WASD positions on keyboard
+                    switch(e.code) {
+                    case 'KeyW':
                             window.gameState.input.forward = true;
                             movePlayer('forward');
-                        break;
-                        case 's':
-                        case 'arrowdown':
+                            break;
+                        case 'KeyS':
                             window.gameState.input.backward = true;
                             movePlayer('backward');
                         break;
-                        case 'a':
-                        case 'arrowleft':
+                    case 'KeyA':
                             window.gameState.input.left = true;
                             movePlayer('left');
                         break;
-                        case 'd':
-                        case 'arrowright':
+                        case 'KeyD':
+                            window.gameState.input.right = true;
+                            movePlayer('right');
+                            break;
+                        case 'ArrowUp':
+                            window.gameState.input.forward = true;
+                            movePlayer('forward');
+                            break;
+                    case 'ArrowDown':
+                            window.gameState.input.backward = true;
+                            movePlayer('backward');
+                        break;
+                        case 'ArrowLeft':
+                            window.gameState.input.left = true;
+                            movePlayer('left');
+                            break;
+                    case 'ArrowRight':
                             window.gameState.input.right = true;
                             movePlayer('right');
                         break;
                 }
-                    updateMovementHud();
                 };
 
                 const keyUpHandler = (e) => {
-                    switch(e.key.toLowerCase()) {
-                        case 'w':
-                        case 'arrowup':
+                    switch(e.code) {
+                    case 'KeyW':
+                    case 'ArrowUp':
                             window.gameState.input.forward = false;
                         break;
-                        case 's':
-                        case 'arrowdown':
+                    case 'KeyS':
+                    case 'ArrowDown':
                             window.gameState.input.backward = false;
-                        break;
-                        case 'a':
-                        case 'arrowleft':
+                            break;
+                        case 'KeyA':
+                        case 'ArrowLeft':
                             window.gameState.input.left = false;
                         break;
-                        case 'd':
-                        case 'arrowright':
+                    case 'KeyD':
+                    case 'ArrowRight':
                             window.gameState.input.right = false;
                         break;
                 }
-                    updateMovementHud();
                 };
 
                 document.addEventListener('keydown', keyDownHandler);
@@ -847,29 +790,51 @@
                     if (window.gameState.input.backward) movePlayer('backward');
                     if (window.gameState.input.left) movePlayer('left');
                     if (window.gameState.input.right) movePlayer('right');
-                    updateMovementHud();
                 }, 16);
             }
 
-            function updatePositionDisplay() {
-                const positionDisplay = document.getElementById('position-display');
-                if (positionDisplay && window.gameState.camera) {
-                    const pos = window.gameState.camera.position;
-                    positionDisplay.textContent = `Position: X:${pos.x.toFixed(2)} Y:${pos.y.toFixed(2)} Z:${pos.z.toFixed(2)}`;
+            // Add the movePlayer function back
+            function movePlayer(direction) {
+                if (!window.gameState.camera) return;
+                
+                const speed = 0.1;  // Movement speed
+                const boundaries = {
+                    minX: -7,
+                    maxX: 3.6,
+                    minZ: -6,
+                    maxZ: 5
+                };
+                
+                const camera = window.gameState.camera;
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).setY(0).normalize();
+                
+                const moveVector = new THREE.Vector3();
+                switch(direction) {
+                    case 'forward': moveVector.add(forward.multiplyScalar(speed)); break;
+                    case 'backward': moveVector.add(forward.multiplyScalar(-speed)); break;
+                    case 'left': moveVector.add(right.multiplyScalar(-speed)); break;
+                    case 'right': moveVector.add(right.multiplyScalar(speed)); break;
                 }
-            }
-
-            function updateMovementHud() {
-                document.getElementById('hud-w').textContent = window.gameState.input.forward ? '⬛' : '⬜';
-                document.getElementById('hud-s').textContent = window.gameState.input.backward ? '⬛' : '⬜';
-                document.getElementById('hud-a').textContent = window.gameState.input.left ? '⬛' : '⬜';
-                document.getElementById('hud-d').textContent = window.gameState.input.right ? '⬛' : '⬜';
+                
+                const newPosition = camera.position.clone().add(moveVector);
+                newPosition.y = 1.5;  // Keep constant height
+                
+                // Apply boundaries
+                if (newPosition.x < boundaries.minX) newPosition.x = boundaries.minX;
+                if (newPosition.x > boundaries.maxX) newPosition.x = boundaries.maxX;
+                if (newPosition.z < boundaries.minZ) newPosition.z = boundaries.minZ;
+                if (newPosition.z > boundaries.maxZ) newPosition.z = boundaries.maxZ;
+                
+                camera.position.copy(newPosition);
             }
 
             // Single start game handler
             document.getElementById('start-game').addEventListener('click', () => {
-                document.getElementById('loading-screen').style.display = 'none';
-                document.getElementById('movement-hud').style.display = 'block';
+                const mainMenu = document.getElementById('main-menu');
+                if (mainMenu) {
+                    mainMenu.style.display = 'none';
+                }
                 
                 // Start the game
                 import('./js/main.js').then(({ startGame }) => {
@@ -879,49 +844,33 @@
                 });
             });
 
-            // Force start just triggers normal start
-            document.getElementById('force-start').addEventListener('click', () => {
-                document.getElementById('start-game').click();
-            });
-
             function initializeLanguageSelection() {
                 const motherLanguageSelect = document.getElementById('mother-language');
                 const targetLanguageSelect = document.getElementById('target-language');
-                const startLearningBtn = document.getElementById('start-learning');
-                const languageError = document.getElementById('language-error');
+                const startGameBtn = document.getElementById('start-game');
+
+                if (!motherLanguageSelect || !targetLanguageSelect || !startGameBtn) {
+                    console.error('Required elements not found for language selection');
+                    return;
+                }
 
                 function validateLanguageSelection() {
                     const motherLang = motherLanguageSelect.value;
                     const targetLang = targetLanguageSelect.value;
                     
-                    if (!motherLang || !targetLang) {
-                        startLearningBtn.style.display = 'none';
-                        return;
+                    // Show button only when both languages are selected and they're different
+                    if (motherLang && targetLang && motherLang !== targetLang) {
+                        startGameBtn.style.display = 'block';
+                        } else {
+                        startGameBtn.style.display = 'none';
                     }
-
-                    if (motherLang === targetLang) {
-                        startLearningBtn.style.display = 'none';
-                        if (languageError) {
-                            languageError.style.display = 'block';
-                            languageError.textContent = 'Please select different languages for learning';
-                        }
-                        return;
-                    }
-
-                    if (languageError) {
-                        languageError.style.display = 'none';
-                    }
-                    startLearningBtn.style.display = 'block';
                 }
-
-                // Add initial validation check
-                validateLanguageSelection();
 
                 // Add change event listeners
                 motherLanguageSelect.addEventListener('change', validateLanguageSelection);
                 targetLanguageSelect.addEventListener('change', validateLanguageSelection);
 
-                startLearningBtn.addEventListener('click', () => {
+                startGameBtn.addEventListener('click', () => {
                     const motherLang = motherLanguageSelect.value;
                     const targetLang = targetLanguageSelect.value;
 
@@ -932,18 +881,25 @@
                     // Set the languages in game state
                     window.gameState.motherLanguage = motherLang;
                     window.gameState.targetLanguage = targetLang;
-
-                    // Hide language selection and show loading screen
-                    const languageSelection = document.getElementById('language-selection');
-                    const loadingScreen = document.getElementById('loading-screen');
-                    const startGameBtn = document.getElementById('start-game');
-
-                    if (languageSelection) languageSelection.style.display = 'none';
-                    if (loadingScreen) loadingScreen.style.display = 'block';
-                    if (startGameBtn) startGameBtn.style.display = 'block';
+                    
+                    // Hide the main menu
+                    const mainMenu = document.getElementById('main-menu');
+                    if (mainMenu) {
+                        mainMenu.style.display = 'none';
+                    }
                     
                     console.log(`Languages set - Mother: ${motherLang}, Target: ${targetLang}`);
+                    
+                    // Start the game
+                    import('./js/main.js').then(({ startGame }) => {
+                        startGame();
+                    }).catch(error => {
+                        console.error("Error starting game:", error);
+                    });
                 });
+
+                // Initial validation
+                validateLanguageSelection();
             }
 
             // Function to fetch dialogue choices from Supabase
@@ -951,17 +907,17 @@
                 if (window.gameState.isDialogueActive || 
                     window.gameState.currentDialogueSteps || 
                     window.gameState.hasJustFinishedDialogue) {
-                                return;
-                            }
+                        return;
+                    }
 
                 try {
                     const { motherLanguage, targetLanguage } = window.gameState;
                     
                     if (!motherLanguage || !targetLanguage) {
                         console.log('Languages not selected yet');
-                        return;
-                    }
-                    
+                                return;
+                            }
+
                     console.log(`Fetching dialogues for ${motherLanguage} -> ${targetLanguage}`);
                     
                     const { data, error } = await window.supabase
@@ -973,9 +929,9 @@
 
                     if (error || !data || data.length === 0) {
                         console.error('Error fetching dialogues:', error);
-                    return;
-                }
-                
+                                return;
+                            }
+
                     // Group phrases by dialogue_number
                     const dialogues = data.reduce((acc, phrase) => {
                         if (!acc[phrase.dialogue_number]) {
@@ -992,8 +948,8 @@
                         !window.gameState.currentDialogueSteps && 
                         !window.gameState.hasJustFinishedDialogue) {
                         showDialogueChoices();
-                    }
-                } catch (error) {
+                            }
+                        } catch (error) {
                     console.error('Error in fetchDialogueChoices:', error);
                 }
             }
@@ -1025,7 +981,7 @@
                     noChoicesMsg.style.color = '#ff6b6b';
                     noChoicesMsg.style.padding = '10px';
                     choicesContainer.appendChild(noChoicesMsg);
-                    } else {
+                        } else {
                     dialogues.forEach((dialogueSteps, index) => {
                         const firstStep = dialogueSteps[0];
                         const button = document.createElement('button');

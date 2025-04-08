@@ -1,111 +1,138 @@
 /* Dialogue Container */
 .dialogue-container {
     position: fixed;
-    bottom: 35px;
+    bottom: 50px;
     left: 50%;
     transform: translateX(-50%);
-    max-width: 1040px;
-    width: 90%;
+    width: 100%;
+    max-width: 800px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding: 20px;
     z-index: 1000;
 }
 
 .dialogue-box {
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
     border-radius: 12px;
     padding: 12px 25px;
-    color: white;
-    opacity: 0;
+    margin: 0 20px;
+    color: black;
+    font-family: 'Arial', sans-serif;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     transform: translateY(20px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .dialogue-box.active {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
+    background-color: #ffffff;
 }
 
 .dialogue-box.sliding-up {
-    opacity: 0;
     transform: translateY(-20px);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
 }
 
 .dialogue-text {
-    font-size: 22px;
-    margin-bottom: 8px;
-    position: relative;
+    flex-grow: 1;
+    color: #000000;
+    font-size: 16px;
+    line-height: 1.4;
 }
 
-.dialogue-text .phrase {
-    color: #ffffff;
+.dialogue-text .phrase,
+.dialogue-text .phonetic,
+.dialogue-text .translation {
+    color: #000000;
+    font-size: 16px;
 }
 
 .dialogue-text .phonetic {
-    color: #a8a8a8;
     font-style: italic;
-    font-size: 20px;
 }
 
-.dialogue-text .translation {
-    color: #cccccc;
-    font-size: 20px;
-}
-
-.dialogue-text span.matched {
-    color: #4169E1;  /* Royal Blue */
-    text-shadow: 0 0 8px rgba(65, 105, 225, 0.3);
-    transition: all 0.2s ease;
+.dialogue-text .input-indicator {
+    margin-top: 5px;
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
 }
 
 .dialogue-controls {
     display: flex;
-    gap: 8px;
-    justify-content: flex-end;
+    gap: 10px;
+    margin-left: 15px;
 }
 
 .dialogue-controls button {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    color: white;
-    padding: 6px 12px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: #000000 !important;
+    font-size: 20px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 18px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Target all possible elements inside buttons */
+.dialogue-controls button svg,
+.dialogue-controls button svg *,
+.dialogue-controls button path,
+.dialogue-controls button g,
+.dialogue-controls button use,
+.dialogue-controls button img,
+.dialogue-controls button i,
+.dialogue-controls button span {
+    fill: #000000 !important;
+    color: #000000 !important;
+    stroke: #000000 !important;
+    filter: brightness(0) !important;
+}
+
+/* Specific targeting for audio icon */
+.dialogue-controls button[aria-label="Play audio"] *,
+.dialogue-controls button[title="Play audio"] *,
+.dialogue-controls .audio-button * {
+    fill: #000000 !important;
+    color: #000000 !important;
+    stroke: #000000 !important;
+    filter: brightness(0) !important;
 }
 
 .dialogue-controls button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
+    background: #ffffff;
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
 }
 
-.dialogue-controls button:active {
-    transform: translateY(0px);
+/* Highlighting for matched words */
+.dialogue-text .phrase span {
+    transition: background-color 0.3s;
 }
 
-.input-indicator {
-    font-size: 16px;
-    color: #a8a8a8;
-    margin-top: 4px;
-    transition: color 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+.dialogue-text .phrase span.matched {
+    background-color: rgba(76, 175, 80, 0.3);
 }
 
-.input-indicator::before {
-    content: '🎤';
-    opacity: 0.7;
-}
-
-.dialogue-box[data-listening="true"] .input-indicator::before {
-    animation: pulse 1.5s infinite;
+/* Microphone button styles */
+.dialogue-box[data-listening="true"] .input-indicator {
+    color: #4CAF50;
 }
 
 /* Add a subtle bounce effect for new boxes */

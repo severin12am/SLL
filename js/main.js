@@ -390,35 +390,6 @@ function createBasicEnvironment() {
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
     
-    // Add player marker if it doesn't exist
-    if (!window.gameState.playerMarker && window.gameState.player) {
-        console.log("Creating player marker");
-        
-        // Create a player marker sphere
-        const playerMarker = new THREE.Mesh(
-            new THREE.SphereGeometry(0.3, 16, 16),
-            new THREE.MeshBasicMaterial({ color: 0x0000FF })
-        );
-        
-        // Position at player location
-        if (window.gameState.player.position) {
-            playerMarker.position.copy(window.gameState.player.position);
-        } else {
-            playerMarker.position.set(0, 1, 0);
-        }
-        
-        scene.add(playerMarker);
-        window.gameState.playerMarker = playerMarker;
-        
-        // Add direction arrow
-        const arrowGeometry = new THREE.ConeGeometry(0.1, 0.5, 8);
-        const arrowMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
-        const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
-        arrow.position.set(0, 0, -0.4); // Point forward (negative Z)
-        arrow.rotation.x = Math.PI / 2; // Rotate to point forward
-        playerMarker.add(arrow); // Attach to player marker
-    }
-    
     // Ensure animation is running
     if (typeof fallbackAnimate === 'function') {
         fallbackAnimate();
@@ -496,11 +467,6 @@ function setupAnimationLoop() {
     // Animation function
     function animationLoop() {
         requestAnimationFrame(animationLoop);
-        
-        // Update player marker position if player exists
-        if (window.gameState?.player?.position && window.gameState.playerMarker) {
-            window.gameState.playerMarker.position.copy(window.gameState.player.position);
-        }
         
         // Update position display
         if (typeof window.updatePositionDisplay === 'function') {

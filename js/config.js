@@ -146,7 +146,7 @@ export const DIALOGUE_CONFIG = {
     maxDistance: 2.0,
     cooldownTime: 2000,  // ms
     textSpeed: 50,  // ms per character
-    optionDelay: 500  // ms before showing options
+    optionDelay: 650  // ms before showing options (increased by 30% from 500)
 };
 
 // Default language configuration

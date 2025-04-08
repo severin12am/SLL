@@ -6,35 +6,85 @@ body {
     background-color: #bfe3dd;
 }
 
-/* Language Selection */
-#language-selection {
+/* Main Menu */
+#main-menu {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.85);
-    padding: 30px;
+    background-color: rgba(255, 255, 255, 0.85);
+    padding: 40px;
     border-radius: 15px;
-    z-index: 1000;
-    color: white;
     text-align: center;
+    color: black;
+    min-width: 400px;
+    z-index: 5000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#main-menu h1 {
+    font-size: 24px;
+    margin-bottom: 30px;
+    color: #4CAF50;
+}
+
+#loading-bar {
+    width: 300px;
+    height: 20px;
+    background-color: #eee;
+    border-radius: 10px;
+    margin: 20px auto;
+    overflow: hidden;
+}
+
+#loading-progress {
+    width: 0%;
+    height: 100%;
+    background-color: #4CAF50;
+    transition: width 0.3s;
+}
+
+#loading-status {
+    margin: 10px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.language-section {
+    margin: 20px 0;
+    text-align: left;
+}
+
+.language-section h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: black;
 }
 
 .language-select {
-    margin: 10px 0;
-    padding: 10px;
     width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 16px;
+    background: white;
+    cursor: pointer;
 }
 
-.start-button {
-    margin-top: 20px;
-    padding: 12px 30px;
+#start-game {
+    margin-top: 30px;
+    padding: 15px 30px;
     background: #4CAF50;
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
+    transition: background-color 0.3s;
+}
+
+#start-game:hover {
+    background: #45a049;
 }
 
 /* Mobile Controls */
@@ -59,7 +109,6 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    transition: transform 0.1s, background-color 0.1s;
 }
 
 /* Show mobile controls on touch devices */
@@ -82,33 +131,115 @@ body {
     pointer-events: none;
 }
 
-/* Loading screen */
-#loading-screen {
+/* Language Selection */
+#language-selection {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-}
-
-#progress-bar {
-    width: 80%;
-    max-width: 400px;
-    height: 20px;
-    background: #333;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 2rem;
     border-radius: 10px;
-    overflow: hidden;
+    text-align: center;
+    color: white;
+    min-width: 400px;
 }
 
-#progress-fill {
-    width: 0%;
-    height: 100%;
-    background: #4CAF50;
-    transition: width 0.3s ease;
+#language-selection h1 {
+    font-size: 24px;
+    margin-bottom: 1.5rem;
+    color: #fff;
+}
+
+#language-selection h2 {
+    font-size: 20px;
+    margin-bottom: 1rem;
+    color: #ccc;
+}
+
+.language-section {
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.language-section h3 {
+    font-size: 16px;
+    margin-bottom: 0.5rem;
+    color: #fff;
+}
+
+.language-select {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+}
+
+#start-learning {
+    margin-top: 1.5rem;
+    padding: 0.75rem 2rem;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#start-learning:hover {
+    background-color: #45a049;
+}
+
+#language-selection .crossed-out {
+    text-decoration: line-through;
+    color: #888;
+    font-style: italic;
+}
+
+#loading-message {
+    color: #4CAF50;
+    font-size: 14px;
+    margin: 1rem 0;
+    font-style: italic;
+}
+
+.language-section h2 {
+    color: #000000;
+    font-size: 18px;
+    margin-bottom: 10px;
+    font-weight: normal;
+}
+
+.language-section h3 {
+    color: #000000;
+    font-size: 16px;
+    margin-bottom: 8px;
+    font-weight: normal;
+}
+
+.language-select {
+    color: #000000;
+    font-size: 16px;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#language-selection {
+    color: #000000;
+}
+
+#language-selection h1,
+#language-selection h2,
+#language-selection h3,
+#language-selection p,
+#language-selection span {
+    color: #000000;
 } 

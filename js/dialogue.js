@@ -229,12 +229,36 @@ export class DialogueManager {
         
         // Set the current step to the clicked box's step
         this.currentStep = targetStep;
-        this.currentUserBox = clickedBox;
         
-        // Start listening if it's a user turn
+        // Reset the current user box and target phrase
         if (this.isUserTurn(targetStep)) {
-            this.startListening();
+            this.currentUserBox = clickedBox;
+            // Get the correct target phrase from dialogue history
+            const dialogueItem = this.dialogueHistory[targetStep];
+            if (dialogueItem) {
+                this.currentTargetPhrase = dialogueItem.targetPhrase.text;
+                
+                // Reset the input indicator
+                const indicator = clickedBox.querySelector('.input-indicator');
+                if (indicator) {
+                    indicator.textContent = 'Say the phrase...';
+                    indicator.style.color = ''; // Reset color
+                }
+                
+                // Remove any existing highlighting
+                const phraseSpans = clickedBox.querySelectorAll('.phrase span');
+                phraseSpans.forEach(span => {
+                    span.classList.remove('matched');
+                });
+                
+                // Start listening again
+                this.startListening();
+            }
         }
+    }
+
+    isUserTurn(step) {
+        return step % 2 === 0;
     }
 
     handleSpeechInput(transcript, targetPhrase) {
@@ -298,7 +322,7 @@ export class DialogueManager {
         if (matchPercentage >= 60) {
             this.stopListening();
             
-            // Show success indicator
+            // Show success indicator immediately
             if (this.currentUserBox) {
                 const indicator = this.currentUserBox.querySelector('.input-indicator');
                 if (indicator) {
@@ -313,10 +337,20 @@ export class DialogueManager {
             // Update the current step to continue from this point
             this.currentStep = currentBoxStep + 1;
             
-            // Wait a short moment to show the success message before proceeding
+            // Remove highlighting after a delay
+            setTimeout(() => {
+                if (this.currentUserBox) {
+                    const phraseSpans = this.currentUserBox.querySelectorAll('.phrase span');
+                    phraseSpans.forEach(span => {
+                        span.classList.remove('matched');
+                    });
+                }
+            }, 500);
+            
+            // Wait a moment before proceeding to next step
             setTimeout(() => {
                 this.showNextStep();
-            }, 500);
+            }, 1000);  // Increased to 1000ms to ensure highlighting is visible before moving on
         }
     }
 
