@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-    <title>Language Learning World</title>
+    <title>Tokyo Language Learning Experience</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <link type="text/css" rel="stylesheet" href="css/main.css">
         <link type="text/css" rel="stylesheet" href="css/dialogue.css">
+        <!-- Import Map to resolve module paths -->
+        <script type="importmap">
+        {
+            "imports": {
+                "three": "./build/three.module.js",
+                "three/addons/": "./jsm/",
+                "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
+            }
+        }
+        </script>
         <style>
         /* Base Styles */
             body {
@@ -18,91 +28,133 @@
         /* UI Elements */
         #dialogue-container {
             position: fixed;
-            bottom: 100px;
-                left: 50%;
-                transform: translateX(-50%);
-            width: 90%;
-            max-width: 600px;
-            z-index: 1001;
-            pointer-events: auto;
-            }
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 800px;
+            z-index: 1000;
+        }
 
-            .dialogue-box {
-            position: relative;
-                margin: 5px 0;
-            padding: 15px;
-                background: rgba(255, 248, 220, 0.95);
-            border-radius: 8px;
-                transition: transform 0.5s ease;
+        .dialogue-box {
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin: 0 20px;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
-            }
-
-            .dialogue-box.vendor {
-                background: rgba(230, 240, 255, 0.95);
-            }
-
-            .dialogue-box.cat {
-                background: rgba(255, 230, 230, 0.95);
-            }
-
-            .dialogue-box.disappearing {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-
-        .replay-button, .sound-button {
-            width: 36px;
-            height: 36px;
-                border-radius: 50%;
-            background: white;
-                border: 2px solid #666;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            margin: 0 8px;
-            flex-shrink: 0;
+            justify-content: space-between;
+            max-width: 900px;
         }
 
         .dialogue-text {
-            flex-grow: 1;
-        }
-
-        .dialogue-options {
-            margin-top: 10px;
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            justify-content: center;
+            font-size: 18px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .dialogue-option {
-            padding: 8px 15px;
-            margin: 5px 0;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .dialogue-option:hover {
-            background: rgba(255, 255, 255, 0.9);
-        }
-
-        .word {
-            cursor: pointer;
-            display: inline-block;
-            margin-right: 2px;
+        .phrase {
+            color: #ffffff;
         }
 
         .phonetic {
-                font-style: italic;
-            color: #666;
-            margin: 0 5px;
-            }
+            color: #a8a8a8;
+            font-style: italic;
+            font-size: 16px;
+        }
 
-            .translation {
-            color: #2e8b57;
-            }
+        .translation {
+            color: #cccccc;
+            font-size: 16px;
+        }
+
+        .dialogue-controls button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 0 8px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dialogue-controls button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .input-indicator {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            margin-top: 10px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: typing 1s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Position Display Styles */
+        #position-display {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 1000;
+        }
 
         /* Language Selection */
             #language-selection {
@@ -111,28 +163,58 @@
                 left: 50%;
                 transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.85);
-            padding: 30px;
+            padding: 40px;
             border-radius: 15px;
                 z-index: 5000;
                 color: white;
             text-align: center;
+            min-width: 300px;
             }
 
             .language-select {
-            margin: 10px 0;
-            padding: 10px;
-            width: 100%;
+                margin: 20px 0;
+                width: 100%;
+                padding: 12px;
+                border-radius: 8px;
+                border: none;
+                font-size: 16px;
+                background: white;
+                cursor: pointer;
             }
 
-            .start-button {
-                margin-top: 20px;
-            padding: 12px 30px;
+            .instruction-text {
+                height: 60px;
+                margin: 20px 0;
+                font-size: 18px;
+                opacity: 1;
+                transition: opacity 0.5s ease-in-out;
+            }
+
+            .instruction-text.fade {
+                opacity: 0;
+            }
+
+            #start-learning {
+                margin-top: 30px;
+                padding: 15px 30px;
                 background: #4CAF50;
                 color: white;
                 border: none;
-            border-radius: 8px;
+                border-radius: 8px;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 18px;
+                display: none;
+                transition: background-color 0.3s;
+            }
+
+            #start-learning:hover {
+                background: #45a049;
+            }
+
+            .menu-title {
+                font-size: 24px;
+                margin-bottom: 30px;
+                color: #4CAF50;
             }
 
             /* Pause Menu */
@@ -175,154 +257,831 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: #000;
+                background-color: #000;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
-                z-index: 2000;
+                z-index: 9999;
+                color: white;
+                font-family: Arial, sans-serif;
             }
 
-            /* Mobile Controls */
-            #mobile-controls {
+            #loading-bar {
+                width: 300px;
+                height: 20px;
+                background-color: #333;
+                border-radius: 10px;
+                margin-top: 20px;
+                overflow: hidden;
+            }
+            
+            #loading-progress {
+                width: 0%;
+                height: 100%;
+                background-color: #4CAF50;
+                transition: width 0.3s;
+            }
+            
+            #loading-status {
+                margin-top: 10px;
+                font-size: 14px;
+                color: #aaa;
+            }
+            
+            #force-start {
+                margin-top: 20px;
+                padding: 10px 20px;
+                background-color: #f44336;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                display: none;
+            }
+            
+            #force-start.visible {
+                display: block;
+            }
+            
+            #start-game {
+                margin-top: 20px;
+                padding: 10px 20px;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+            }
+            
+            #success-indicator {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                font-size: 24px;
+                color: green;
+                background-color: white;
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                text-align: center;
+                line-height: 30px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
+                z-index: 9999;
+            }
+            
+            #virtual-controls {
                 position: fixed;
                 bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120px;
-            height: 120px;
-                z-index: 1000;
-            display: none;
-        }
+                left: 20px;
+                z-index: 999;
+                display: none;
+            }
 
-        #forward-btn {
+        /* Mobile Controls */
+        #mobile-controls {
+            position: fixed;
+            bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 120px;
+            z-index: 1000;
+        display: none;
+    }
+
+    #forward-btn {
                 position: absolute;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-size: 24px;
-        }
+    }
 
-        /* Show mobile controls on touch devices */
-        @media (hover: none) {
-            #mobile-controls {
-                display: block;
+    /* Show mobile controls on touch devices */
+    @media (hover: none) {
+        #mobile-controls {
+            display: block;
+        }
+    }
+
+    /* Success indicator */
+    #success-indicator {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 5em;
+        color: #4CAF50;
+        opacity: 0;
+        transition: opacity 0.5s;
+        z-index: 1500;
+    }
+
+    /* Animation styles */
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .phonetic.listening {
+        animation: pulse 1.5s infinite;
+        color: #0066cc;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    .dialogue-box.shake {
+        animation: shake 0.5s;
             }
-        }
 
-        /* Success indicator */
-        #success-indicator {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 5em;
-            color: #4CAF50;
-            opacity: 0;
-            transition: opacity 0.5s;
-            z-index: 1500;
-        }
+    /* Dialogue Choice Menu */
+    #dialogue-choice-menu {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        padding: 20px;
+        border-radius: 12px;
+        color: white;
+        z-index: 2000;
+        display: none;
+        width: 80%;
+        max-width: 500px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
 
-        /* Animation styles */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+    .dialogue-choice {
+        padding: 12px 20px;
+        margin: 8px 0;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        font-size: 16px;
+    }
 
-        .phonetic.listening {
-            animation: pulse 1.5s infinite;
-            color: #0066cc;
-        }
+    .dialogue-choice:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
 
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-
-        .dialogue-box.shake {
-            animation: shake 0.5s;
-            }
+    .choice-menu-title {
+        font-size: 20px;
+        margin-bottom: 15px;
+        color: #4CAF50;
+        text-align: center;
+    }
         </style>
     </head>
     <body>
+        <div id="loading-screen">
+            <h1>Loading Game</h1>
+            <div id="loading-bar">
+                <div id="loading-progress"></div>
+        </div>
+            <div id="loading-status">Initializing...</div>
+            <button id="start-game" style="display: none;">START GAME</button>
+            <button id="force-start" style="display: none;">FORCE START</button>
+        </div>
+
         <div id="container"></div>
 
-    <!-- Dialogue Container -->
-    <div id="dialogue-container"></div>
-
-    <!-- Language Selection -->
         <div id="language-selection">
-            <h2>Select Languages</h2>
-            <div>
-                <label for="mother-language">Your Language:</label>
-                <select id="mother-language" class="language-select">
-                <option value="en" selected>English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                    <option value="ja">Japanese</option>
+            <h1 class="menu-title">Language Learning World</h1>
+            <div class="instruction-text" id="instruction-text">Choose the language you already know</div>
+            
+            <select class="language-select" id="mother-language">
+                <option value="" disabled selected>Select your language</option>
+                    <option value="en">English</option>
+                <option value="es">Spanish (Español)</option>
+                <option value="fr">French (Français)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="ru">Russian (Русский)</option>
+                <option value="zh">Chinese (中文)</option>
+                <option value="ja">Japanese (日本語)</option>
+                <option value="ar">Arabic (العربية)</option>
+                <option value="pt">Portuguese (Português)</option>
+                <option value="it">Italian (Italiano)</option>
                 </select>
-            </div>
-            <div>
-                <label for="new-language">Language to Learn:</label>
-                <select id="new-language" class="language-select">
-                    <option value="es" selected>Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                    <option value="ja">Japanese</option>
+
+            <select class="language-select" id="target-language">
+                <option value="" disabled selected>Select language to learn</option>
+                    <option value="en">English</option>
+                <option value="es">Spanish (Español)</option>
+                <option value="fr">French (Français)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="ru">Russian (Русский)</option>
+                <option value="zh">Chinese (中文)</option>
+                <option value="ja">Japanese (日本語)</option>
+                <option value="ar">Arabic (العربية)</option>
+                <option value="pt">Portuguese (Português)</option>
+                <option value="it">Italian (Italiano)</option>
                 </select>
+
+            <button id="start-learning">Start Learning</button>
             </div>
-            <div>
-                <label>
-                    <input type="checkbox" id="enable-speech" checked>
-                    Enable Speech Recognition
-                </label>
+
+        <div id="position-display">Position: <span id="coords">0, 0, 0</span></div>
+        
+        <!-- Dialogue System -->
+        <div id="dialogue-container" class="dialogue-container" style="display: none;">
+            <div class="dialogue-box">
+                <button class="replay-btn">↩</button>
+                <div class="dialogue-text">
+                    <span class="phrase"></span>
+                    <span class="phonetic"></span>
+                    <span class="translation"></span>
+                </div>
+                <button class="sound-btn">🔊</button>
+                <div class="input-indicator">Press Space to continue...</div>
             </div>
-        <button id="start-game" class="start-button">Start Learning</button>
         </div>
 
-    <!-- Pause Menu -->
-    <div id="pause-menu">
-        <h2 class="menu-title">Game Paused</h2>
-        <button id="resume-button" class="menu-button">Resume</button>
-        <button id="settings-button" class="menu-button">Settings</button>
-        <button id="restart-button" class="menu-button">Restart</button>
-    </div>
-
-    <!-- Loading Screen -->
-    <div id="loading-screen">
-        <h2 style="color: white;">Loading World...</h2>
-        <div id="progress-bar" style="width: 300px; height: 20px; border: 1px solid white; margin-top: 20px;">
-            <div id="progress" style="width: 0%; height: 100%; background-color: #4CAF50;"></div>
+        <div id="pause-menu" style="display: none;">
+            <div class="pause-content">
+                <h2>Game Paused</h2>
+                <button id="resume-button">Resume</button>
+                <button id="restart-button">Restart</button>
+            </div>
         </div>
-        <p id="loading-status" style="color: white; margin-top: 10px;">Initializing...</p>
-    </div>
 
-    <!-- Mobile Controls -->
-    <div id="mobile-controls">
-    <div id="forward-btn">⬆️</div>
-    </div>
+        <div id="virtual-controls"></div>
+        
+        <!-- Success indicator -->
+        <div id="success-indicator">✓</div>
+      
+        <!-- Movement Debug HUD -->
+        <div id="movement-hud" style="position: fixed; top: 10px; left: 10px; background-color: rgba(0,0,0,0.5); color: white; padding: 10px; font-family: monospace; z-index: 999; display: none;">
+            <div>W: <span id="hud-w">⬜</span></div>
+            <div>A: <span id="hud-a">⬜</span></div>
+            <div>S: <span id="hud-s">⬜</span></div>
+            <div>D: <span id="hud-d">⬜</span></div>
+        </div>
 
-    <!-- Success indicator -->
-    <div id="success-indicator">✓</div>
+        <!-- Dialogue Choice Menu -->
+        <div id="dialogue-choice-menu" style="display: none;"></div>
 
-    <!-- Import maps -->
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "./build/three.module.js",
-            "three/addons/": "./jsm/",
-            "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
-        }
-    }
-    </script>
-    
-    <!-- Main entry point -->
-    <script type="module" src="js/main.js"></script>
+        <script type="module">
+            // Import THREE and other dependencies
+            import * as THREE from 'three';
+            import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+            import { createClient } from '@supabase/supabase-js';
+            import { SUPABASE_CONFIG, GAME_CONFIG } from './js/config.js';
+            
+            // Initialize Supabase client
+            const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+            window.supabase = supabase; // Make supabase available globally
+            
+            // Make THREE globally available
+            window.THREE = THREE;
+            
+            // Single global game state
+            window.gameState = {
+                input: {
+                    forward: false,
+                    backward: false,
+                    left: false,
+                    right: false,
+                    run: false
+                },
+                characters: {},
+                mouseSensitivity: GAME_CONFIG.mouseSensitivity,
+                euler: new THREE.Euler(0, 0, 0, 'YXZ'),
+                scene: null,
+                camera: null,
+                renderer: null,
+                vendor: null,
+                motherLanguage: 'en',  // Default mother language
+                targetLanguage: 'ru',  // Default target language
+                dialogueHistory: [],
+                dialogueChoices: [],
+                currentDialogueStep: 0,
+                currentDialogueIndex: 0,
+                isDialogueActive: false,
+                isChoosingDialogue: false,
+                audio: null,
+                hasJustFinishedDialogue: false,
+                dialogueManager: null
+            };
+
+            // Remove DOMContentLoaded listener and call initialize directly
+            initializeGame();
+
+            function initializeGame() {
+                console.log("Initializing game");
+                
+                // Initialize scene only if not already initialized
+                if (!window.gameState.scene) {
+                    initializeScene();
+                }
+                
+                // Setup controls only once
+                setupControls();
+                
+                // Initialize language selection
+                initializeLanguageSelection();
+            }
+
+            function initializeScene() {
+                // Create container if needed
+                let container = document.getElementById('container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'container';
+                    document.body.appendChild(container);
+                }
+                
+                // Create scene
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x87CEEB);
+                
+                // Create camera
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.set(0, 1.5, 0);
+                camera.lookAt(0, 1.5, -10);
+                
+                // Create renderer
+                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                container.appendChild(renderer.domElement);
+                
+                // Store in gameState
+                window.gameState.scene = scene;
+                window.gameState.camera = camera;
+                window.gameState.renderer = renderer;
+                
+                // Add lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+                directionalLight.position.set(1, 1, 1);
+                scene.add(directionalLight);
+                
+                // Load vendor
+                loadVendor();
+                
+                // Start animation loop
+                animate();
+            }
+
+            function loadVendor() {
+                const loader = new GLTFLoader();
+                const loadingProgressElement = document.getElementById('loading-progress');
+                const loadingStatus = document.getElementById('loading-status');
+                const startGameButton = document.getElementById('start-game');
+                
+                loader.load(
+                    'models/vendor.glb',
+                    function (gltf) {
+                        const vendor = gltf.scene;
+                        vendor.position.set(2.82, 0.45, -3.1);
+                        vendor.scale.set(0.4, 0.4, 0.4);
+                        window.gameState.scene.add(vendor);
+                        window.gameState.vendor = vendor;
+                        
+                        loadingProgressElement.style.width = '100%';
+                        loadingStatus.textContent = 'Loading complete!';
+                        startGameButton.style.display = 'block';
+                    },
+                    function (xhr) {
+                        const progress = (xhr.loaded / xhr.total) * 100;
+                        loadingProgressElement.style.width = progress + '%';
+                        loadingStatus.textContent = `Loading: ${Math.round(progress)}%`;
+                    },
+                    function (error) {
+                        console.error('Error loading vendor:', error);
+                        loadingStatus.textContent = 'Error loading model. Click Force Start to continue.';
+                        document.getElementById('force-start').style.display = 'block';
+                    }
+                );
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                updatePositionDisplay();
+                
+                // Check distance to vendor for dialogue trigger
+                if (window.gameState.camera && window.gameState.vendor) {
+                    const camera = window.gameState.camera;
+                    const vendor = window.gameState.vendor;
+                    const distance = camera.position.distanceTo(vendor.position);
+                    
+                    // Update position display
+                    document.getElementById('position-display').textContent = 
+                        `Position: X:${camera.position.x.toFixed(2)} Y:${camera.position.y.toFixed(2)} Z:${camera.position.z.toFixed(2)} | Distance to vendor: ${distance.toFixed(2)}`;
+                    
+                    // Show/hide dialogue based on distance and state
+                    if (distance <= GAME_CONFIG.vendorTriggerDistance) {
+                        // Only show menu if we're in a completely fresh state
+                        if (!window.gameState.isDialogueActive && 
+                            !window.gameState.isChoosingDialogue && 
+                            !window.gameState.currentDialogueSteps && 
+                            !window.gameState.hasJustFinishedDialogue) {
+                            
+                            const existingMenu = document.getElementById('dialogue-choice-menu');
+                            if (!existingMenu || existingMenu.style.display === 'none') {
+                                window.gameState.isChoosingDialogue = true;
+                                fetchDialogueChoices();
+                            }
+                        }
+                    } else {
+                        // Reset all dialogue states when moving away from vendor
+                        const choiceMenu = document.getElementById('dialogue-choice-menu');
+                        if (choiceMenu) {
+                            choiceMenu.remove();
+                        }
+                        
+                        const dialogueContainer = document.getElementById('dialogue-container');
+                        if (dialogueContainer) {
+                            dialogueContainer.style.display = 'none';
+                        }
+                        
+                        // Reset all states
+                        window.gameState.isDialogueActive = false;
+                        window.gameState.isChoosingDialogue = false;
+                        window.gameState.hasJustFinishedDialogue = false;
+                        window.gameState.currentDialogueSteps = null;
+                        window.gameState.currentDialogueStep = 0;
+                    }
+                }
+                
+                window.gameState.renderer.render(window.gameState.scene, window.gameState.camera);
+            }
+
+            function setupControls() {
+                setupKeyboardControls();
+                setupMouseControls();
+                setupMovementLoop();
+                
+                // Show movement HUD
+                const movementHud = document.getElementById('movement-hud');
+                if (movementHud) {
+                    movementHud.style.display = 'block';
+                }
+            }
+
+            // Single movement system
+            function movePlayer(direction) {
+                if (!window.gameState.camera) return;
+                
+                const speed = GAME_CONFIG.movementSpeed;
+                const boundaries = {
+                    minX: -7,
+                    maxX: 3.6,
+                    minZ: -6,
+                    maxZ: 5
+                };
+                
+                const camera = window.gameState.camera;
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize();
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).setY(0).normalize();
+                
+                const moveVector = new THREE.Vector3();
+                switch(direction) {
+                    case 'forward': moveVector.add(forward.multiplyScalar(speed)); break;
+                    case 'backward': moveVector.add(forward.multiplyScalar(-speed)); break;
+                    case 'left': moveVector.add(right.multiplyScalar(-speed)); break;
+                    case 'right': moveVector.add(right.multiplyScalar(speed)); break;
+                }
+                
+                const newPosition = camera.position.clone().add(moveVector);
+                newPosition.y = 1.5;
+                
+                // Allow sliding along boundaries
+                if (newPosition.x < boundaries.minX) newPosition.x = boundaries.minX;
+                if (newPosition.x > boundaries.maxX) newPosition.x = boundaries.maxX;
+                if (newPosition.z < boundaries.minZ) newPosition.z = boundaries.minZ;
+                if (newPosition.z > boundaries.maxZ) newPosition.z = boundaries.maxZ;
+                
+                camera.position.copy(newPosition);
+                updatePositionDisplay();
+            }
+
+            function setupKeyboardControls() {
+                const keyDownHandler = (e) => {
+                    switch(e.key.toLowerCase()) {
+                        case 'w':
+                        case 'arrowup':
+                            window.gameState.input.forward = true;
+                            movePlayer('forward');
+                        break;
+                        case 's':
+                        case 'arrowdown':
+                            window.gameState.input.backward = true;
+                            movePlayer('backward');
+                        break;
+                        case 'a':
+                        case 'arrowleft':
+                            window.gameState.input.left = true;
+                            movePlayer('left');
+                        break;
+                        case 'd':
+                        case 'arrowright':
+                            window.gameState.input.right = true;
+                            movePlayer('right');
+                        break;
+                }
+                    updateMovementHud();
+                };
+
+                const keyUpHandler = (e) => {
+                    switch(e.key.toLowerCase()) {
+                        case 'w':
+                        case 'arrowup':
+                            window.gameState.input.forward = false;
+                        break;
+                        case 's':
+                        case 'arrowdown':
+                            window.gameState.input.backward = false;
+                        break;
+                        case 'a':
+                        case 'arrowleft':
+                            window.gameState.input.left = false;
+                        break;
+                        case 'd':
+                        case 'arrowright':
+                            window.gameState.input.right = false;
+                        break;
+                }
+                    updateMovementHud();
+                };
+
+                document.addEventListener('keydown', keyDownHandler);
+                document.addEventListener('keyup', keyUpHandler);
+            }
+
+            function setupMouseControls() {
+                const container = document.getElementById('container');
+                
+                container.addEventListener('click', () => container.requestPointerLock());
+                
+            document.addEventListener('mousemove', (event) => {
+                    if (document.pointerLockElement === container && window.gameState.camera) {
+                        window.gameState.euler.y -= event.movementX * window.gameState.mouseSensitivity;
+                        window.gameState.euler.x -= event.movementY * window.gameState.mouseSensitivity;
+                        window.gameState.euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, window.gameState.euler.x));
+                        window.gameState.camera.quaternion.setFromEuler(window.gameState.euler);
+                    }
+                });
+            }
+
+            function setupMovementLoop() {
+                setInterval(() => {
+                    if (window.gameState.input.forward) movePlayer('forward');
+                    if (window.gameState.input.backward) movePlayer('backward');
+                    if (window.gameState.input.left) movePlayer('left');
+                    if (window.gameState.input.right) movePlayer('right');
+                    updateMovementHud();
+                }, 16);
+            }
+
+            function updatePositionDisplay() {
+                const positionDisplay = document.getElementById('position-display');
+                if (positionDisplay && window.gameState.camera) {
+                    const pos = window.gameState.camera.position;
+                    positionDisplay.textContent = `Position: X:${pos.x.toFixed(2)} Y:${pos.y.toFixed(2)} Z:${pos.z.toFixed(2)}`;
+                }
+            }
+
+            function updateMovementHud() {
+                document.getElementById('hud-w').textContent = window.gameState.input.forward ? '⬛' : '⬜';
+                document.getElementById('hud-s').textContent = window.gameState.input.backward ? '⬛' : '⬜';
+                document.getElementById('hud-a').textContent = window.gameState.input.left ? '⬛' : '⬜';
+                document.getElementById('hud-d').textContent = window.gameState.input.right ? '⬛' : '⬜';
+            }
+
+            // Single start game handler
+            document.getElementById('start-game').addEventListener('click', () => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('movement-hud').style.display = 'block';
+                
+                // Start the game
+                import('./js/main.js').then(({ startGame }) => {
+                    startGame();
+                }).catch(error => {
+                    console.error("Error starting game:", error);
+                });
+            });
+
+            // Force start just triggers normal start
+            document.getElementById('force-start').addEventListener('click', () => {
+                document.getElementById('start-game').click();
+            });
+
+            function initializeLanguageSelection() {
+                const motherLanguageSelect = document.getElementById('mother-language');
+                const targetLanguageSelect = document.getElementById('target-language');
+                const startLearningBtn = document.getElementById('start-learning');
+                const languageError = document.getElementById('language-error');
+
+                function validateLanguageSelection() {
+                    const motherLang = motherLanguageSelect.value;
+                    const targetLang = targetLanguageSelect.value;
+                    
+                    if (!motherLang || !targetLang) {
+                        startLearningBtn.style.display = 'none';
+                        return;
+                    }
+
+                    if (motherLang === targetLang) {
+                        startLearningBtn.style.display = 'none';
+                        if (languageError) {
+                            languageError.style.display = 'block';
+                            languageError.textContent = 'Please select different languages for learning';
+                        }
+                        return;
+                    }
+
+                    if (languageError) {
+                        languageError.style.display = 'none';
+                    }
+                    startLearningBtn.style.display = 'block';
+                }
+
+                // Add initial validation check
+                validateLanguageSelection();
+
+                // Add change event listeners
+                motherLanguageSelect.addEventListener('change', validateLanguageSelection);
+                targetLanguageSelect.addEventListener('change', validateLanguageSelection);
+
+                startLearningBtn.addEventListener('click', () => {
+                    const motherLang = motherLanguageSelect.value;
+                    const targetLang = targetLanguageSelect.value;
+
+                    if (!motherLang || !targetLang || motherLang === targetLang) {
+                        return;
+                    }
+
+                    // Set the languages in game state
+                    window.gameState.motherLanguage = motherLang;
+                    window.gameState.targetLanguage = targetLang;
+
+                    // Hide language selection and show loading screen
+                    const languageSelection = document.getElementById('language-selection');
+                    const loadingScreen = document.getElementById('loading-screen');
+                    const startGameBtn = document.getElementById('start-game');
+
+                    if (languageSelection) languageSelection.style.display = 'none';
+                    if (loadingScreen) loadingScreen.style.display = 'block';
+                    if (startGameBtn) startGameBtn.style.display = 'block';
+                    
+                    console.log(`Languages set - Mother: ${motherLang}, Target: ${targetLang}`);
+                });
+            }
+
+            // Function to fetch dialogue choices from Supabase
+            async function fetchDialogueChoices() {
+                if (window.gameState.isDialogueActive || 
+                    window.gameState.currentDialogueSteps || 
+                    window.gameState.hasJustFinishedDialogue) {
+                    return;
+                }
+
+                try {
+                    const { motherLanguage, targetLanguage } = window.gameState;
+                    
+                    if (!motherLanguage || !targetLanguage) {
+                        console.log('Languages not selected yet');
+                        return;
+                    }
+                    
+                    console.log(`Fetching dialogues for ${motherLanguage} -> ${targetLanguage}`);
+                    
+                    const { data, error } = await window.supabase
+                        .from('vendor_phrases')
+                        .select('*')
+                        .eq('language', motherLanguage)
+                        .eq('dialogue_number', 1)
+                        .order('dialogue_step', { ascending: true });
+
+                    if (error || !data || data.length === 0) {
+                        console.error('Error fetching dialogues:', error);
+                        return;
+                    }
+
+                    // Group phrases by dialogue_number
+                    const dialogues = data.reduce((acc, phrase) => {
+                        if (!acc[phrase.dialogue_number]) {
+                            acc[phrase.dialogue_number] = [];
+                        }
+                        acc[phrase.dialogue_number].push(phrase);
+                        return acc;
+                    }, {});
+
+                    window.gameState.dialogueChoices = Object.values(dialogues);
+                    
+                    // Only show choices if we're still in a valid state
+                    if (!window.gameState.isDialogueActive && 
+                        !window.gameState.currentDialogueSteps && 
+                        !window.gameState.hasJustFinishedDialogue) {
+                        showDialogueChoices();
+                    }
+                } catch (error) {
+                    console.error('Error in fetchDialogueChoices:', error);
+                }
+            }
+
+            // Function to show dialogue choices
+            function showDialogueChoices() {
+                console.log('Showing dialogue choice menu');
+                
+                let choiceMenu = document.getElementById('dialogue-choice-menu');
+                if (choiceMenu) {
+                    choiceMenu.remove();
+                }
+                
+                choiceMenu = document.createElement('div');
+                choiceMenu.id = 'dialogue-choice-menu';
+                choiceMenu.style.display = 'block';
+                choiceMenu.innerHTML = `
+                    <div class="choice-menu-title">Choose a dialogue to practice</div>
+                    <div id="dialogue-choices"></div>
+                `;
+                document.body.appendChild(choiceMenu);
+                
+                const choicesContainer = document.getElementById('dialogue-choices');
+                const dialogues = window.gameState.dialogueChoices || [];
+                
+                if (dialogues.length === 0) {
+                    const noChoicesMsg = document.createElement('div');
+                    noChoicesMsg.textContent = 'No phrases available for selected languages';
+                    noChoicesMsg.style.color = '#ff6b6b';
+                    noChoicesMsg.style.padding = '10px';
+                    choicesContainer.appendChild(noChoicesMsg);
+                } else {
+                    dialogues.forEach((dialogueSteps, index) => {
+                        const firstStep = dialogueSteps[0];
+                        const button = document.createElement('button');
+                        button.className = 'dialogue-choice';
+                        button.textContent = `Dialogue ${index + 1}: ${firstStep.text}`;
+                        button.onclick = () => {
+                            window.gameState.isChoosingDialogue = false;
+                            choiceMenu.remove();
+                            startDialogueSequence(dialogueSteps);
+                        };
+                        choicesContainer.appendChild(button);
+                    });
+                }
+            }
+
+            function startDialogueSequence(dialogueSteps) {
+                if (!dialogueSteps || !dialogueSteps.length) return;
+                
+                console.log('Starting dialogue sequence with:', dialogueSteps);
+                
+                // Remove the menu first
+                const choiceMenu = document.getElementById('dialogue-choice-menu');
+                if (choiceMenu) {
+                    choiceMenu.remove();
+                }
+                
+                // Get or create dialogue container
+                let dialogueContainer = document.getElementById('dialogue-container');
+                if (!dialogueContainer) {
+                    dialogueContainer = document.createElement('div');
+                    dialogueContainer.id = 'dialogue-container';
+                    dialogueContainer.className = 'dialogue-container';
+                    document.body.appendChild(dialogueContainer);
+                }
+                
+                // Make sure container is visible and empty
+                dialogueContainer.style.display = 'block';
+                dialogueContainer.innerHTML = '';
+                
+                // Update game state
+                window.gameState.isDialogueActive = true;
+                window.gameState.isChoosingDialogue = false;
+                window.gameState.hasJustFinishedDialogue = true;
+                window.gameState.currentDialogueSteps = dialogueSteps;
+                window.gameState.currentDialogueStep = 0;
+                
+                // Initialize dialogue manager if not exists
+                if (!window.gameState.dialogueManager) {
+                    import('./js/dialogue.js').then(({ initializeDialogue }) => {
+                        window.gameState.dialogueManager = initializeDialogue(dialogueContainer, window.supabase);
+                        window.gameState.dialogueManager.startDialogue(dialogueSteps[0].dialogue_number);
+                    });
+                } else {
+                    window.gameState.dialogueManager.startDialogue(dialogueSteps[0].dialogue_number);
+                }
+            }
+        </script>
     </body>
 </html>

@@ -1,90 +1,182 @@
 /* Dialogue Container */
-#dialogue-container {
+.dialogue-container {
     position: fixed;
-    bottom: 100px;
+    bottom: 35px;
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
-    max-width: 600px;
-    z-index: 1001;
-    pointer-events: auto;
+    width: 100%;
+    max-width: 1040px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
 }
 
 .dialogue-box {
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 12px;
+    padding: 12px 25px;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
     position: relative;
-    margin: 5px 0;
-    padding: 15px;
-    background: rgba(255, 248, 220, 0.95);
-    border-radius: 8px;
-    transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), 
-                opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
-    display: flex;
-    align-items: center;
+    min-width: 800px;
 }
 
-.dialogue-box.vendor {
-    background: rgba(230, 240, 255, 0.95);
+.dialogue-box.active {
+    transform: translateY(0);
+    opacity: 1;
 }
 
-.dialogue-box.appearing {
-    transform: translateY(20px);
-    opacity: 0;
-}
-
-.dialogue-box.disappearing {
+.dialogue-box.sliding-up {
     transform: translateY(-20px);
-    opacity: 0;
-}
-
-.replay-button, .sound-button {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: white;
-    border: 2px solid #666;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 8px;
-    flex-shrink: 0;
+    opacity: 0.8;
 }
 
 .dialogue-text {
-    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+    font-size: 18px;
+    position: relative;
 }
 
-.word {
-    cursor: pointer;
+.phrase {
+    color: #ffffff;
+}
+
+.phrase span {
+    transition: color 0.2s ease;
     display: inline-block;
-    margin-right: 2px;
 }
 
-.word.matched {
-    animation: highlight-flash 1s;
+.phrase span.matched {
+    color: #4CAF50;
 }
 
 .phonetic {
+    color: #a8a8a8;
     font-style: italic;
-    color: #666;
-    margin: 0 5px;
-}
-
-.phonetic.listening {
-    animation: pulse 1.5s infinite;
-    color: #0066cc;
 }
 
 .translation {
-    color: #2e8b57;
+    color: #cccccc;
+}
+
+.dialogue-controls {
+    display: flex;
+    gap: 8px;
+    margin-left: 25px;
+}
+
+.dialogue-controls button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dialogue-controls button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.mic-button {
+    position: relative;
+}
+
+.mic-button::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #4CAF50;
+    border-radius: 50%;
+    bottom: -2px;
+    right: -2px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.mic-button.active::after {
+    opacity: 1;
+}
+
+.input-indicator {
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 16px;
+    color: #888;
+    white-space: nowrap;
+    text-align: center;
+    transition: color 0.3s ease;
+}
+
+.user-input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: white;
+    font-size: 16px;
+    width: 100%;
+    margin: 0 10px;
+}
+
+.user-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.dialogue-box[data-listening="true"] .mic-button {
+    animation: pulse 1.5s infinite;
+    background: rgba(255, 0, 0, 0.3);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
 }
 
 /* Animations */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
@@ -94,8 +186,4 @@
 @keyframes highlight-flash {
     0% { background-color: rgba(76, 175, 80, 0.3); }
     100% { background-color: transparent; }
-}
-
-.dialogue-box.shake {
-    animation: shake 0.5s;
 } 

@@ -89,3 +89,173 @@ a, button, input, select {
 	margin-top: 20px;
 	padding: 10px;
 }
+
+#dialogue-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 600px;
+    display: none;
+    z-index: 1000;
+}
+
+.dialogue-box {
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 10px;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dialogue-box.vendor {
+    border-left: 4px solid #4CAF50;
+}
+
+.dialogue-text {
+    margin-bottom: 15px;
+    line-height: 1.5;
+    font-size: 18px;
+}
+
+.phrase {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.phonetic {
+    color: #9E9E9E;
+    font-style: italic;
+}
+
+.translation {
+    color: #81C784;
+}
+
+.dialogue-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.sound-button, .replay-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    color: white;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.sound-button:hover, .replay-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.sound-button:active, .replay-button:active {
+    transform: scale(0.95);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOutDown {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+.dialogue-box {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.dialogue-box.fade-out {
+    animation: fadeOutDown 0.3s ease-out forwards;
+}
+
+/* Typing indicator */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    justify-content: center;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    animation: typing 1s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+/* Match feedback */
+.match-feedback {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(76, 175, 80, 0.9);
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.match-feedback.show {
+    opacity: 1;
+}
+
+/* Input indicator */
+.input-indicator {
+    position: absolute;
+    bottom: -25px;
+    left: 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    font-style: italic;
+}

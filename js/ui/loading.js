@@ -160,6 +160,14 @@ export function updateLoadingProgress(progress, status) {
     if (statusText && status) {
         statusText.textContent = status;
     }
+    
+    // Show a message to use the force start button after 5 seconds
+    setTimeout(() => {
+        if (statusText && loadingScreen.style.display !== 'none') {
+            statusText.textContent = 'Loading is taking longer than expected. Click START GAME to continue.';
+            statusText.style.color = '#ff9900';
+        }
+    }, 5000);
 }
 
 /**

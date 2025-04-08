@@ -6,8 +6,10 @@
 // Configuration Constants
 
 // Supabase configuration
-export const SUPABASE_URL = 'https://fjvltffpcafcbbpwzyml.supabase.co';
-export const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk';
+export const SUPABASE_CONFIG = {
+    url: 'https://fjvltffpcafcbbpwzyml.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk'
+};
 
 // Map boundaries (invisible fence)
 export const MAP_BOUNDARIES = {
@@ -174,14 +176,19 @@ export const INPUT_CONFIG = {
 
 // Debug settings
 export const DEBUG_CONFIG = {
-    showColliders: false,
-    showStats: true,
-    logLevel: 'info',  // debug, info, warn, error
-    skipIntro: false,
-    isDevelopment: true
+    showStats: false,
+    logLevel: 'info'
 };
 
 // Mobile detection
 export const isMobile = (typeof window !== 'undefined') && 
     (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    (window.matchMedia && window.matchMedia('(max-width: 767px)').matches)); 
+    (window.matchMedia && window.matchMedia('(max-width: 767px)').matches));
+
+// Game Configuration
+export const GAME_CONFIG = {
+    vendorTriggerDistance: 3,
+    movementSpeed: 0.1,
+    mouseSensitivity: 0.002,
+    dialogueCount: 10
+}; 
