@@ -154,7 +154,7 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.85);
+            background: transparent;
             padding: 40px;
             border-radius: 15px;
                 z-index: 5000;
@@ -170,7 +170,8 @@
                 border-radius: 8px;
                 border: none;
                 font-size: 16px;
-                background: white;
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
                 cursor: pointer;
             }
 
@@ -403,41 +404,169 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.9);
-        padding: 20px;
-        border-radius: 12px;
-        color: white;
         z-index: 2000;
-        display: none;
-        width: 80%;
+        width: 90%;
         max-width: 500px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .dialogue-choice {
-        padding: 12px 20px;
-        margin: 8px 0;
         background: rgba(255, 255, 255, 0.1);
-        border: none;
-        border-radius: 8px;
+        border: 1px solid rgba(76, 175, 80, 0.3);
         color: white;
+        padding: 15px 20px;
+        margin: 10px 0;
+        border-radius: 8px;
         width: 100%;
         text-align: left;
         cursor: pointer;
-        transition: background-color 0.2s ease;
+        transition: all 0.3s ease;
         font-size: 16px;
     }
 
     .dialogue-choice:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(76, 175, 80, 0.2);
+        transform: scale(1.02);
     }
 
     .choice-menu-title {
-        font-size: 20px;
-        margin-bottom: 15px;
         color: #4CAF50;
+        font-size: 22px;
+        margin-bottom: 15px;
         text-align: center;
-            }
+    }
+
+        /* Robot Quote Styling */
+        .robot-quote {
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+            color: white;
+        }
+
+        .quote-bubble {
+            position: relative;
+            padding: 20px;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            border-radius: 15px;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .quote-bubble:before {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            border: 10px solid transparent;
+            border-top-color: rgba(76, 175, 80, 0.3);
+            transform: translateX(-50%);
+        }
+
+        .robot-quote h1 {
+            color: #4CAF50;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .robot-quote p {
+            color: #ffffff;
+            font-size: 16px;
+            margin-bottom: 25px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* Update existing menu styles */
+        #language-selection {
+            background: transparent;
+        }
+
+        .language-section {
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .language-section h3 {
+            color: #4CAF50;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .language-select {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            padding: 12px;
+            width: 100%;
+            max-width: 300px;
+            border-radius: 8px;
+            font-size: 16px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .language-select option {
+            background: #2c2c2c;
+            color: white;
+        }
+
+        #start-game {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto 0;
+            transition: all 0.3s ease;
+        }
+
+        #start-game:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        /* Update dialogue choice menu styles */
+        #dialogue-choice-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .dialogue-choice {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: white;
+            padding: 15px 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .dialogue-choice:hover {
+            background: rgba(76, 175, 80, 0.2);
+            transform: scale(1.02);
+        }
+
+        .choice-menu-title {
+            color: #4CAF50;
+            font-size: 22px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
         </style>
     </head>
     <body>
@@ -445,45 +574,53 @@
 
         <!-- Language Selection Menu -->
         <div id="main-menu">
-            <h1>CAPI - SITUATIONAL LANGUAGE LEARNING</h1>
-            <div id="loading-bar">
-                <div id="loading-progress"></div>
-        </div>
-            <div id="loading-status">Loading...</div>
-            
-            <div class="language-section">
-                <h3>I already speak</h3>
-                <select class="language-select" id="mother-language">
-                    <option value="" disabled selected>Select your language</option>
-                    <option value="en">English</option>
-                    <option value="es">Spanish (Español)</option>
-                    <option value="fr">French (Français)</option>
-                    <option value="de">German (Deutsch)</option>
-                    <option value="ru">Russian (Русский)</option>
-                    <option value="zh">Chinese (中文)</option>
-                    <option value="ja">Japanese (日本語)</option>
-                    <option value="ar">Arabic (العربية)</option>
-                    <option value="pt">Portuguese (Português)</option>
-                    <option value="it">Italian (Italiano)</option>
-                </select>
+            <div class="robot-quote">
+                <div class="quote-bubble">
+                    <h1>Hello! I'm CAPI, your Language Learning Assistant! 👋</h1>
+                    <p>I'm here to help you learn a new language through real-world conversations. Let me know which languages we'll be working with today!</p>
+                    
+                    <div class="language-section">
+                        <h3>What language do you already speak?</h3>
+                        <select class="language-select" id="mother-language">
+                            <option value="" disabled selected>Select your language</option>
+                            <option value="en">English</option>
+                            <option value="es">Spanish (Español)</option>
+                            <option value="fr">French (Français)</option>
+                            <option value="de">German (Deutsch)</option>
+                            <option value="ru">Russian (Русский)</option>
+                            <option value="zh">Chinese (中文)</option>
+                            <option value="ja">Japanese (日本語)</option>
+                            <option value="ar">Arabic (العربية)</option>
+                            <option value="pt">Portuguese (Português)</option>
+                            <option value="it">Italian (Italiano)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="language-section">
+                        <h3>And what would you like to learn?</h3>
+                        <select class="language-select" id="target-language">
+                            <option value="" disabled selected>Select language to learn</option>
+                            <option value="en">English</option>
+                            <option value="es">Spanish (Español)</option>
+                            <option value="fr">French (Français)</option>
+                            <option value="de">German (Deutsch)</option>
+                            <option value="ru">Russian (Русский)</option>
+                            <option value="zh">Chinese (中文)</option>
+                            <option value="ja">Japanese (日本語)</option>
+                            <option value="ar">Arabic (العربية)</option>
+                            <option value="pt">Portuguese (Português)</option>
+                            <option value="it">Italian (Italiano)</option>
+                        </select>
+                    </div>
+                    
+                    <div id="loading-bar">
+                        <div id="loading-progress"></div>
+                    </div>
+                    <div id="loading-status">Loading...</div>
+                    
+                    <button id="start-game">Let's Begin Our Journey!</button>
+                </div>
             </div>
-            <div class="language-section">
-                <h3>I want to learn</h3>
-                <select class="language-select" id="target-language">
-                    <option value="" disabled selected>Select language to learn</option>
-                    <option value="en">English</option>
-                    <option value="es">Spanish (Español)</option>
-                    <option value="fr">French (Français)</option>
-                    <option value="de">German (Deutsch)</option>
-                    <option value="ru">Russian (Русский)</option>
-                    <option value="zh">Chinese (中文)</option>
-                    <option value="ja">Japanese (日本語)</option>
-                    <option value="ar">Arabic (العربية)</option>
-                    <option value="pt">Portuguese (Português)</option>
-                    <option value="it">Italian (Italiano)</option>
-                </select>
-            </div>
-            <button id="start-game">START GAME</button>
         </div>
 
         <!-- Dialogue System -->
@@ -514,7 +651,15 @@
         <div id="success-indicator">✓</div>
 
         <!-- Dialogue Choice Menu -->
-        <div id="dialogue-choice-menu" style="display: none;"></div>
+        <div id="dialogue-choice-menu" style="display: none;">
+            <div class="robot-quote">
+                <div class="quote-bubble">
+                    <div class="choice-menu-title">Hey there! Ready to practice some conversations?</div>
+                    <p>I've prepared some useful dialogues for you. Choose one and I'll guide you through it!</p>
+                    <div id="dialogue-choices"></div>
+                </div>
+            </div>
+        </div>
 
         <script type="module">
             // Import THREE and other dependencies
@@ -530,6 +675,11 @@
             // Make THREE globally available
             window.THREE = THREE;
             
+            // Global variables
+            let robot;
+            let mixer;
+            const clock = new THREE.Clock();
+
             // Single global game state
             window.gameState = {
                 input: {
@@ -616,6 +766,23 @@
                 // Load vendor
                 loadVendor();
                 
+                // Load robot model
+                const robotLoader = new GLTFLoader();
+                robotLoader.load('models/robot.glb', function(gltf) {
+                    robot = gltf.scene;  // Assign to global robot variable
+                    robot.scale.set(0.2, 0.2, 0.2);
+                    scene.add(robot);
+                    
+                    // If the robot has animations
+                    if (gltf.animations && gltf.animations.length) {
+                        mixer = new THREE.AnimationMixer(robot);
+                        const action = mixer.clipAction(gltf.animations[0]);
+                        action.play();
+                    }
+                }, undefined, function(error) {
+                    console.error('Error loading robot:', error);
+                });
+                
                 // Start animation loop
                 animate();
             }
@@ -654,6 +821,11 @@
 
             function animate() {
                 requestAnimationFrame(animate);
+                
+                const delta = clock.getDelta();
+                if (mixer) mixer.update(delta);
+                
+                updateRobotPosition();
                 
                 // Check distance to vendor for dialogue trigger
                 if (window.gameState.camera && window.gameState.vendor) {
@@ -749,7 +921,7 @@
                     case 'KeyW':
                     case 'ArrowUp':
                             window.gameState.input.forward = false;
-                        break;
+                            break;
                     case 'KeyS':
                     case 'ArrowDown':
                             window.gameState.input.backward = false;
@@ -757,11 +929,11 @@
                         case 'KeyA':
                         case 'ArrowLeft':
                             window.gameState.input.left = false;
-                        break;
+                            break;
                     case 'KeyD':
                     case 'ArrowRight':
                             window.gameState.input.right = false;
-                        break;
+                            break;
                 }
                 };
 
@@ -851,8 +1023,8 @@
 
                 if (!motherLanguageSelect || !targetLanguageSelect || !startGameBtn) {
                     console.error('Required elements not found for language selection');
-                    return;
-                }
+                                return;
+                            }
 
                 function validateLanguageSelection() {
                     const motherLang = motherLanguageSelect.value;
@@ -861,7 +1033,7 @@
                     // Show button only when both languages are selected and they're different
                     if (motherLang && targetLang && motherLang !== targetLang) {
                         startGameBtn.style.display = 'block';
-                        } else {
+                            } else {
                         startGameBtn.style.display = 'none';
                     }
                 }
@@ -877,7 +1049,7 @@
                     if (!motherLang || !targetLang || motherLang === targetLang) {
                         return;
                     }
-
+                    
                     // Set the languages in game state
                     window.gameState.motherLanguage = motherLang;
                     window.gameState.targetLanguage = targetLang;
@@ -907,9 +1079,9 @@
                 if (window.gameState.isDialogueActive || 
                     window.gameState.currentDialogueSteps || 
                     window.gameState.hasJustFinishedDialogue) {
-                        return;
-                    }
-
+                    return;
+                }
+                
                 try {
                     const { motherLanguage, targetLanguage } = window.gameState;
                     
@@ -929,8 +1101,8 @@
 
                     if (error || !data || data.length === 0) {
                         console.error('Error fetching dialogues:', error);
-                                return;
-                            }
+                        return;
+                    }
 
                     // Group phrases by dialogue_number
                     const dialogues = data.reduce((acc, phrase) => {
@@ -949,7 +1121,7 @@
                         !window.gameState.hasJustFinishedDialogue) {
                         showDialogueChoices();
                             }
-                        } catch (error) {
+                } catch (error) {
                     console.error('Error in fetchDialogueChoices:', error);
                 }
             }
@@ -967,8 +1139,13 @@
                 choiceMenu.id = 'dialogue-choice-menu';
                 choiceMenu.style.display = 'block';
                 choiceMenu.innerHTML = `
-                    <div class="choice-menu-title">Choose a dialogue to practice</div>
-                    <div id="dialogue-choices"></div>
+                    <div class="robot-quote">
+                        <div class="quote-bubble">
+                            <div class="choice-menu-title">Hey there! Ready to practice some conversations?</div>
+                            <p>I've prepared some useful dialogues for you. Choose one and I'll guide you through it!</p>
+                            <div id="dialogue-choices"></div>
+                        </div>
+                    </div>
                 `;
                 document.body.appendChild(choiceMenu);
                 
@@ -981,7 +1158,7 @@
                     noChoicesMsg.style.color = '#ff6b6b';
                     noChoicesMsg.style.padding = '10px';
                     choicesContainer.appendChild(noChoicesMsg);
-                        } else {
+                    } else {
                     dialogues.forEach((dialogueSteps, index) => {
                         const firstStep = dialogueSteps[0];
                         const button = document.createElement('button');
@@ -1036,6 +1213,38 @@
                     });
                 } else {
                     window.gameState.dialogueManager.startDialogue(dialogueSteps[0].dialogue_number);
+                }
+            }
+
+            function updateRobotPosition() {
+                if (robot) {
+                    // Calculate position relative to camera
+                    const distance = 1; // Distance in front of camera (reduced from 2 to 1)
+                    const offsetX = -1; // Offset to the left
+                    const offsetY = 0.5; // Offset upward
+                    
+                    // Get camera's forward and right vectors
+                    const cameraForward = new THREE.Vector3(0, 0, -1);
+                    cameraForward.applyQuaternion(window.gameState.camera.quaternion);
+                    const cameraRight = new THREE.Vector3(1, 0, 0);
+                    cameraRight.applyQuaternion(window.gameState.camera.quaternion);
+                    
+                    // Calculate robot position
+                    const robotPosition = new THREE.Vector3();
+                    robotPosition.copy(window.gameState.camera.position)
+                        .add(cameraForward.multiplyScalar(distance)) // Move forward relative to camera view
+                        .add(cameraRight.multiplyScalar(offsetX)) // Move left relative to camera
+                        .add(new THREE.Vector3(0, offsetY, 0)); // Move up
+                    
+                    // Update robot position
+                    robot.position.copy(robotPosition);
+                    
+                    // Make robot face the camera
+                    robot.lookAt(window.gameState.camera.position);
+                    
+                    // Apply a counter-rotation to keep robot upright
+                    robot.rotation.x = 0;
+                    robot.rotation.z = 0;
                 }
             }
         </script>
