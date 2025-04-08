@@ -165,7 +165,7 @@ async function loadTokyoMap(scene, camera, renderer) {
                     // Create a simple player object if not already defined
                     if (!window.gameState.player) {
                         // Create player at position
-                        const playerPosition = new THREE.Vector3(1, 2.5, 1);  // Position player slightly above street level
+                        const playerPosition = new THREE.Vector3(2.8, 1.5, -1.9);  // Position player slightly above street level
                         window.gameState.player = {
                             id: 'player',
                             position: playerPosition,
