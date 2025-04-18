@@ -23,6 +23,8 @@
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    color: #000;
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .dialogue-box.active {
@@ -46,8 +48,9 @@
 
 .phrase {
     font-weight: bold;
-    color: #333;
+    color: #000;
     font-size: 14.4px; /* Reduced from 18px by 20% */
+    display: block;
 }
 
 .phonetic {
