@@ -14,17 +14,21 @@
 }
 
 .dialogue-box {
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 8px;
-    padding: 8px 15px;
-    margin-bottom: 8px;
-    max-width: 100%;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    color: #000;
+    background-color: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    padding: 6px 25px;
+    margin: 0 20px;
+    color: black;
+    font-family: 'Arial', sans-serif;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .dialogue-box.active {
@@ -40,29 +44,32 @@
 }
 
 .dialogue-text {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 14.4px;
+    flex-grow: 1;
+    color: #000000;
+    font-size: 18px;
+    line-height: 1.4;
+    margin-bottom: 6px;
 }
 
-.phrase {
-    font-weight: bold;
-    color: #000;
-    font-size: 16px;
-    display: block;
-    margin-bottom: 4px;
+.dialogue-text .phrase,
+.dialogue-text .phonetic,
+.dialogue-text .translation {
+    color: #000000;
 }
 
-.phonetic {
-    color: #555;
+.dialogue-text .phonetic {
     font-style: italic;
-    font-size: 12.8px;
+    font-size: 13px;
+    color: #bbb;
+    margin: 0 5px;
+    display: inline-block;
 }
 
-.translation {
-    color: #333;
-    font-size: 12.8px;
+.dialogue-text .translation {
+    font-size: 13px;
+    color: #aaa;
+    font-style: italic;
+    display: inline-block;
 }
 
 .dialogue-text .input-indicator {
@@ -186,18 +193,52 @@
     100% { background-color: transparent; }
 }
 
-/* Mobile-specific styles */
-@media (max-width: 768px) {
-    .dialogue-text {
-        flex-direction: column;
-    }
-    
-    .phrase, .phonetic, .translation {
-        display: block;
-        width: 100%;
-    }
-    
+.clickable-word {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: rgba(76, 175, 80, 0.5);
+    font-size: inherit;
+}
+
+.clickable-word:hover {
+    color: #4CAF50;
+    text-decoration-color: #4CAF50;
+}
+
+/* Media Query for Mobile Devices */
+@media (max-width: 600px) {
     .dialogue-box {
-        padding: 6px 8px;
+        padding: 10px 12px;
+        margin: 0 10px;
+    }
+
+    .dialogue-text {
+        font-size: 16px;
+    }
+
+    .phonetic,
+    .translation {
+        display: block;
+        margin: 3px 0;
+        font-size: 12px;
+    }
+
+    .dialogue-text .phonetic,
+    .dialogue-text .translation {
+        display: block;
+        margin: 3px 0;
+        font-size: 12px;
+    }
+
+    .dialogue-controls {
+        gap: 5px;
+    }
+
+    .dialogue-controls button {
+        width: 35px;
+        height: 35px;
+        font-size: 18px;
+        padding: 0;
     }
 } 

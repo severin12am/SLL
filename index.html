@@ -1075,8 +1075,8 @@
 
                 if (!motherLanguageSelect || !targetLanguageSelect || !startGameBtn) {
                     console.error('Required elements not found for language selection');
-                                return;
-                            }
+                        return;
+                    }
 
                 function validateLanguageSelection() {
                     const motherLang = motherLanguageSelect.value;
@@ -1139,8 +1139,8 @@
                     
                     if (!motherLanguage || !targetLanguage) {
                         console.log('Languages not selected yet');
-                                return;
-                            }
+                        return;
+                    }
 
                     console.log(`Fetching dialogues for ${motherLanguage} -> ${targetLanguage}`);
                     
@@ -1172,7 +1172,7 @@
                         !window.gameState.currentDialogueSteps && 
                         !window.gameState.hasJustFinishedDialogue) {
                         showDialogueChoices();
-                            }
+                    }
                 } catch (error) {
                     console.error('Error in fetchDialogueChoices:', error);
                 }
@@ -1210,7 +1210,7 @@
                     noChoicesMsg.style.color = '#ff6b6b';
                     noChoicesMsg.style.padding = '10px';
                     choicesContainer.appendChild(noChoicesMsg);
-                    } else {
+                        } else {
                     dialogues.forEach((dialogueSteps, index) => {
                         const firstStep = dialogueSteps[0];
                         const button = document.createElement('button');

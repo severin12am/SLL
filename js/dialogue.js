@@ -38,36 +38,17 @@ export class DialogueManager {
 
         this.recognition.onend = () => {
             if (this.isListening) {
-                // Small delay before restarting to prevent rapid restart cycles
-                setTimeout(() => {
-                    try {
-                        this.recognition.start();
-                    } catch (error) {
-                        console.error('Error restarting speech recognition:', error);
-                        // Try again after a short delay
-                        setTimeout(() => this.startListening(), 1000);
-                    }
-                }, 300);
+                this.recognition.start();
             }
         };
 
         this.recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
-            
-            // Handle network errors with retry
-            if (event.error === 'network') {
-                // Try to reconnect after a short delay
-                if (this.currentUserBox) {
-                    const indicator = this.currentUserBox.querySelector('.input-indicator');
-                    if (indicator) {
-                        indicator.textContent = 'Network error - retrying...';
-                        indicator.style.color = 'red';
-                    }
+            if (this.currentUserBox) {
+                const indicator = this.currentUserBox.querySelector('.input-indicator');
+                if (indicator) {
+                    indicator.textContent = 'Click microphone to try again';
                 }
-                
-                // Try again after a delay
-                this.isListening = false;
-                setTimeout(() => this.startListening(), 2000);
             }
         };
     }
@@ -133,26 +114,47 @@ export class DialogueManager {
         const textDiv = document.createElement('div');
         textDiv.className = 'dialogue-text';
         
-        // Create simple phrase display without clickable words
-        const phraseDiv = document.createElement('div');
-        phraseDiv.className = 'phrase';
-        phraseDiv.textContent = targetPhrase.text || "Text not available";
+        // Create the phrase display with clickable words
+        const phraseSpan = document.createElement('span');
+        phraseSpan.className = 'phrase';
+        
+        // Split text into words and make them clickable
+        const words = targetPhrase.text.split(' ');
+        words.forEach((word, index) => {
+            const cleanWord = word.trim().replace(/[.,!?]/g, '');
+            if (cleanWord) {
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'clickable-word';
+                wordSpan.textContent = word;
+                wordSpan.dataset.word = cleanWord;
+                wordSpan.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.showWordExplanation(cleanWord);
+                });
+                phraseSpan.appendChild(wordSpan);
+                
+                // Add space between words (except for last word)
+                if (index < words.length - 1) {
+                    phraseSpan.appendChild(document.createTextNode(' '));
+                }
+            }
+        });
         
         // Get the correct phonetic text based on mother language
         const phoneticField = `phonetic_text_${window.gameState.motherLanguage}`;
         const phoneticText = targetPhrase[phoneticField] || targetPhrase.transcription || '';
         
-        const phoneticDiv = document.createElement('div');
-        phoneticDiv.className = 'phonetic';
-        phoneticDiv.textContent = `[${phoneticText}]`;
+        const phoneticSpan = document.createElement('span');
+        phoneticSpan.className = 'phonetic';
+        phoneticSpan.textContent = ` [${phoneticText}] `;
         
-        const translationDiv = document.createElement('div');
-        translationDiv.className = 'translation';
-        translationDiv.textContent = motherPhrase.text;
+        const translationSpan = document.createElement('span');
+        translationSpan.className = 'translation';
+        translationSpan.textContent = ` ${motherPhrase.text}`;
         
-        textDiv.appendChild(phraseDiv);
-        textDiv.appendChild(phoneticDiv);
-        textDiv.appendChild(translationDiv);
+        textDiv.appendChild(phraseSpan);
+        textDiv.appendChild(phoneticSpan);
+        textDiv.appendChild(translationSpan);
         
         if (isUser) {
             // Add speech input indicator
@@ -194,21 +196,14 @@ export class DialogueManager {
         
         this.isListening = true;
         this.recognition.lang = window.gameState.targetLanguage;
+        this.recognition.start();
         
-        try {
-            this.recognition.start();
-            
-            if (this.currentUserBox) {
-                this.currentUserBox.setAttribute('data-listening', 'true');
-                const indicator = this.currentUserBox.querySelector('.input-indicator');
-                if (indicator) {
-                    indicator.textContent = 'Listening...';
-                    indicator.style.color = '';
-                }
+        if (this.currentUserBox) {
+            this.currentUserBox.setAttribute('data-listening', 'true');
+            const indicator = this.currentUserBox.querySelector('.input-indicator');
+            if (indicator) {
+                indicator.textContent = 'Listening...';
             }
-        } catch (error) {
-            console.error('Error starting speech recognition:', error);
-            this.handleSpeechRecognitionError('start');
         }
     }
 
@@ -534,60 +529,6 @@ export class DialogueManager {
         };
         
         document.addEventListener('click', hideExplanation);
-    }
-
-    handleSpeechRecognitionError(errorType) {
-        if (this.currentUserBox) {
-            const indicator = this.currentUserBox.querySelector('.input-indicator');
-            if (indicator) {
-                // Update the UI based on the type of error
-                if (errorType === 'network') {
-                    indicator.textContent = 'Network error. Check your connection.';
-                    indicator.style.color = 'red';
-                    
-                    // Add a retry button
-                    const retryButton = document.createElement('button');
-                    retryButton.textContent = 'Retry';
-                    retryButton.className = 'retry-button';
-                    retryButton.style.marginLeft = '10px';
-                    retryButton.style.padding = '5px 10px';
-                    retryButton.style.background = '#4CAF50';
-                    retryButton.style.color = 'white';
-                    retryButton.style.border = 'none';
-                    retryButton.style.borderRadius = '4px';
-                    retryButton.style.cursor = 'pointer';
-                    retryButton.onclick = () => {
-                        indicator.textContent = 'Listening...';
-                        indicator.style.color = '';
-                        if (retryButton.parentNode === indicator) {
-                            indicator.removeChild(retryButton);
-                        }
-                        this.startListening();
-                    };
-                    
-                    // Only add the button if it's not already there
-                    if (!indicator.querySelector('.retry-button')) {
-                        indicator.appendChild(retryButton);
-                    }
-                } else if (errorType === 'not-allowed') {
-                    indicator.textContent = 'Microphone access denied. Check browser permissions.';
-                    indicator.style.color = 'red';
-                } else if (errorType === 'no-speech') {
-                    indicator.textContent = 'No speech detected. Try again.';
-                    this.startListening(); // Try again automatically
-                } else {
-                    indicator.textContent = 'Speech recognition error. Click to try again.';
-                    indicator.style.color = 'red';
-                    indicator.style.cursor = 'pointer';
-                    indicator.onclick = () => {
-                        indicator.textContent = 'Listening...';
-                        indicator.style.color = '';
-                        indicator.onclick = null;
-                        this.startListening();
-                    };
-                }
-            }
-        }
     }
 }
 
