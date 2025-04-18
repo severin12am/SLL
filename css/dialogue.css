@@ -14,17 +14,17 @@
 }
 
 .dialogue-box {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.9);
     border-radius: 8px;
-    padding: 6px 12px;
+    padding: 8px 15px;
     margin-bottom: 8px;
     max-width: 100%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
     color: #000;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
 .dialogue-box.active {
@@ -42,26 +42,27 @@
 .dialogue-text {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    font-size: 14.4px; /* Reduced from 18px by 20% */
+    gap: 6px;
+    font-size: 14.4px;
 }
 
 .phrase {
     font-weight: bold;
     color: #000;
-    font-size: 14.4px; /* Reduced from 18px by 20% */
+    font-size: 16px;
     display: block;
+    margin-bottom: 4px;
 }
 
 .phonetic {
-    color: #666;
+    color: #555;
     font-style: italic;
-    font-size: 12.8px; /* Reduced from 16px by 20% */
+    font-size: 12.8px;
 }
 
 .translation {
-    color: #444;
-    font-size: 12.8px; /* Reduced from 16px by 20% */
+    color: #333;
+    font-size: 12.8px;
 }
 
 .dialogue-text .input-indicator {

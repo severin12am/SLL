@@ -38,19 +38,37 @@ export class DialogueManager {
 
         this.recognition.onend = () => {
             if (this.isListening) {
-                try {
-                    // Try to restart recognition
-                    this.recognition.start();
-                } catch (error) {
-                    console.error('Error restarting speech recognition:', error);
-                    this.handleSpeechRecognitionError('restart');
-                }
+                // Small delay before restarting to prevent rapid restart cycles
+                setTimeout(() => {
+                    try {
+                        this.recognition.start();
+                    } catch (error) {
+                        console.error('Error restarting speech recognition:', error);
+                        // Try again after a short delay
+                        setTimeout(() => this.startListening(), 1000);
+                    }
+                }, 300);
             }
         };
 
         this.recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
-            this.handleSpeechRecognitionError(event.error);
+            
+            // Handle network errors with retry
+            if (event.error === 'network') {
+                // Try to reconnect after a short delay
+                if (this.currentUserBox) {
+                    const indicator = this.currentUserBox.querySelector('.input-indicator');
+                    if (indicator) {
+                        indicator.textContent = 'Network error - retrying...';
+                        indicator.style.color = 'red';
+                    }
+                }
+                
+                // Try again after a delay
+                this.isListening = false;
+                setTimeout(() => this.startListening(), 2000);
+            }
         };
     }
 
@@ -115,54 +133,26 @@ export class DialogueManager {
         const textDiv = document.createElement('div');
         textDiv.className = 'dialogue-text';
         
-        // Create the phrase display with clickable words
-        const phraseSpan = document.createElement('div');
-        phraseSpan.className = 'phrase';
-        
-        // Check if text is available
-        if (targetPhrase.text) {
-            // Split text into words and make them clickable
-            const words = targetPhrase.text.split(' ');
-            words.forEach((word, index) => {
-                const cleanWord = word.trim().replace(/[.,!?]/g, '');
-                if (cleanWord) {
-                    const wordSpan = document.createElement('span');
-                    wordSpan.className = 'clickable-word';
-                    wordSpan.textContent = word;
-                    wordSpan.dataset.word = cleanWord;
-                    wordSpan.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.showWordExplanation(cleanWord);
-                    });
-                    phraseSpan.appendChild(wordSpan);
-                    
-                    // Add space between words (except for last word)
-                    if (index < words.length - 1) {
-                        phraseSpan.appendChild(document.createTextNode(' '));
-                    }
-                }
-            });
-        } else {
-            // Fallback if text is not available
-            phraseSpan.textContent = "Text not available";
-            console.error("Target phrase text is missing:", targetPhrase);
-        }
+        // Create simple phrase display without clickable words
+        const phraseDiv = document.createElement('div');
+        phraseDiv.className = 'phrase';
+        phraseDiv.textContent = targetPhrase.text || "Text not available";
         
         // Get the correct phonetic text based on mother language
         const phoneticField = `phonetic_text_${window.gameState.motherLanguage}`;
         const phoneticText = targetPhrase[phoneticField] || targetPhrase.transcription || '';
         
-        const phoneticSpan = document.createElement('div');
-        phoneticSpan.className = 'phonetic';
-        phoneticSpan.textContent = `[${phoneticText}]`;
+        const phoneticDiv = document.createElement('div');
+        phoneticDiv.className = 'phonetic';
+        phoneticDiv.textContent = `[${phoneticText}]`;
         
-        const translationSpan = document.createElement('div');
-        translationSpan.className = 'translation';
-        translationSpan.textContent = motherPhrase.text;
+        const translationDiv = document.createElement('div');
+        translationDiv.className = 'translation';
+        translationDiv.textContent = motherPhrase.text;
         
-        textDiv.appendChild(phraseSpan);
-        textDiv.appendChild(phoneticSpan);
-        textDiv.appendChild(translationSpan);
+        textDiv.appendChild(phraseDiv);
+        textDiv.appendChild(phoneticDiv);
+        textDiv.appendChild(translationDiv);
         
         if (isUser) {
             // Add speech input indicator
