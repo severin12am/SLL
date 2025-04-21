@@ -272,7 +272,9 @@ export class DialogueManager {
     }
 
     isUserTurn(step) {
-        return step % 2 === 0;
+        // In our data model, odd steps (1, 3) are vendor's turn, even steps (2, 4) are user's turn
+        // But step is zero-indexed in our code, so we need to check if it's odd
+        return step % 2 !== 0;
     }
 
     handleSpeechInput(transcript, targetPhrase) {
@@ -424,9 +426,11 @@ export class DialogueManager {
         }
 
         const currentDialogue = this.dialogueHistory[this.currentStep];
-        console.log('Showing dialogue step:', currentDialogue);
+        console.log('Showing dialogue step:', currentDialogue, 'Step:', this.currentStep);
         
-        const isUserTurn = this.currentStep % 2 === 0;
+        // Determine if it's user's turn based on the step number
+        const isUserTurn = this.isUserTurn(this.currentStep);
+        console.log('Is user turn:', isUserTurn, 'for step:', this.currentStep);
         
         // Check if this box has already been shown
         const existingBox = this.dialogueBoxes.find(box => 
@@ -436,6 +440,7 @@ export class DialogueManager {
         if (existingBox) {
             console.log('Box already exists for step:', this.currentStep);
             this.currentStep++;
+            this.showNextStep(); // Continue to next step
             return;
         }
         
@@ -477,7 +482,8 @@ export class DialogueManager {
         } else {
             // For user turns, set this as the current user box for speech recognition
             this.currentUserBox = box;
-            this.currentStep++;
+            this.currentTargetPhrase = currentDialogue.targetPhrase.text;
+            this.currentStep++; // Still increment step, but don't automatically continue
         }
     }
 
